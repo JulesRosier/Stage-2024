@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"demo-write/pb"
+	"stage2024/pkg/protogen/bike"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -20,8 +20,8 @@ import (
 )
 
 type BikeData struct {
-	TotalCount int       `json:"total_count"`
-	Results    []pb.Bike `json:"results"`
+	TotalCount int         `json:"total_count"`
+	Results    []bike.Bike `json:"results"`
 }
 
 const maxRequestCount = 100
@@ -53,11 +53,11 @@ func fetchData(url string, offset int) (BikeData, error) {
 	return data, nil
 }
 
-func fetchBikes() []pb.Bike {
+func fetchBikes() []bike.Bike {
 	offset := 0
 	totalCount := 1
 
-	allBikes := make([]pb.Bike, 0)
+	allBikes := make([]bike.Bike, 0)
 
 	for offset < totalCount {
 		data, err := fetchData(url, offset)
@@ -99,7 +99,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile("../bike.proto")
+	file, err := os.ReadFile("./proto/bike/bike.proto")
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -123,13 +123,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&pb.Bike{},
+		&bike.Bike{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*pb.Bike))
+			return proto.Marshal(a.(*bike.Bike))
 		}),
 		sr.Index(1),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*pb.Bike))
+			return proto.Unmarshal(b, a.(*bike.Bike))
 		}),
 	)
 
