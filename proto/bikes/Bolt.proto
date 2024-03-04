@@ -1,13 +1,11 @@
 syntax = "proto3";
 
-option go_package = "./pb";
-
 message Location {
   double lon = 1;
   double lat = 2;
 }
 
-message Bike {
+message BoltLocation {
   string bike_id = 1;
   double lat = 2;
   double lon = 3;

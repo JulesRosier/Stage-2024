@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"stage2024/pkg/protogen/bike"
+	"stage2024/pkg/protogen/bikes"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -38,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile("./proto/bike/bike.proto")
+	file, err := os.ReadFile("./proto/bikes/Bolt.proto")
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -64,13 +64,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&bike.Bike{},
+		&bikes.BoltLocation{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*bike.Bike))
+			return proto.Marshal(a.(*bikes.BoltLocation))
 		}),
 		sr.Index(1),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*bike.Bike))
+			return proto.Unmarshal(b, a.(*bikes.BoltLocation))
 		}),
 	)
 
@@ -83,7 +83,7 @@ func main() {
 		iter := fetches.RecordIter()
 		for !iter.Done() {
 			record := iter.Next()
-			var bike bike.Bike
+			var bike bikes.BoltLocation
 			err := serde.Decode(record.Value, &bike)
 			if err != nil {
 				slog.Error(err.Error())
