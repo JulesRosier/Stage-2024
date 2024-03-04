@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+message Location {
+  double lon = 1;
+  double lat = 2;
+}
+
+message Bike {
+  string bike_id = 1;
+  double lat = 2;
+  double lon = 3;
+  int32 current_range_meters = 4;
+  string pricing_plan_id = 5;
+  string vehicle_type_id = 6;
+  int32 is_reserved = 7;
+  int32 is_disabled = 8;
+  string rental_uris = 9;
+  Location loc = 10;
+}
