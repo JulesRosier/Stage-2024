@@ -49,24 +49,18 @@ func main() {
 		kgo.SeedBrokers(*seed),
 		kgo.AllowAutoTopicCreation(),
 	)
-	if err != nil {
-		panic(err)
-	}
+	helper.MaybeDie(err, "Failed to start kafka client")
 	defer cl.Close()
 
 	slog.Info("Starting schema registry client", "host", *registry)
+
 	rcl, err := sr.NewClient(sr.URLs(*registry))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	helper.MaybeDieErr(err)
 
 	sub := *topic + "-value"
 	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_bolt_proto.Path()))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	helper.MaybeDieErr(err)
+
 	ss, err := rcl.CreateSchema(context.Background(), sub,
 		sr.Schema{
 			Schema: string(file),
@@ -75,10 +69,7 @@ func main() {
 				helper.ReferenceLocation(rcl),
 			},
 		})
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	helper.MaybeDieErr(err)
 	slog.Info("created or reusing schema",
 		"subject", ss.Subject,
 		"version", ss.Version,
@@ -105,7 +96,11 @@ func main() {
 		allBikes := gentopendata.Fetch[*bikes.BoltLocation](url,
 			func(b []byte) *bikes.BoltLocation {
 				var in ApiData
-				json.Unmarshal(b, &in)
+				err := json.Unmarshal(b, &in)
+				if err != nil {
+					slog.Warn(err.Error())
+					return nil
+				}
 
 				out := bikes.BoltLocation{}
 				out.BikeId = in.BikeId
@@ -127,14 +122,14 @@ func main() {
 			wg.Add(1)
 			bikeByte, err := serde.Encode(bike)
 			if err != nil {
-				slog.Error("Bike encoding", "error", err)
-				return
+				slog.Warn("Bike encoding", "error", err)
+				continue
 			}
 			record := &kgo.Record{Topic: "bolt-test", Value: bikeByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				if err != nil {
-					slog.Error("record had a produce error",
+					slog.Warn("record had a produce error",
 						"error", err,
 					)
 				}
