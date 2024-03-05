@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "common/location.proto";
+
+message DonkeyLocation {
+  string station_id = 1;
+  int32 num_bikes_available = 2;
+  int32 num_docks_available = 3;
+  int32 is_renting = 4;
+  int32 is_installed = 5;
+  int32 is_returning = 6;
+  string last_reported = 7;
+  common.Location location = 8;
+  string name = 9;
+}
