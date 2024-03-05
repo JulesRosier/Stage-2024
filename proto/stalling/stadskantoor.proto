@@ -7,8 +7,8 @@ message Location2 {
 
 message StallingInfo {
     string name = 1;
-    float parkingcapacity = 2;
-    float vacantspaces = 3;
+    int32 parkingcapacity = 2;
+    int32 vacantspaces = 3;
     string naam = 4;
     string parking = 5;
     int32 occupation = 6;

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"log/slog"
 	"os"
@@ -19,6 +20,22 @@ import (
 
 const fetchdelay = time.Minute * 5
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
+
+type ApiData struct {
+	Name            string  `json:"name"`
+	Parkingcapacity float32 `json:"parkingCapacity"`
+	Vacantspaces    float32 `json:"vacantSpaces"`
+	Naam            string  `json:"naam"`
+	Parking         string  `json:"parking"`
+	Occupation      int32   `json:"occupation"`
+	Infotekst       string  `json:"infotekst"`
+	Enginfotekst    string  `json:"enginfotekst"`
+	Frinfotekst     string  `json:"frinfotekst"`
+	Locatie         struct {
+		Lon float64 `json:"lon"`
+		Lat float64 `json:"lat"`
+	} `json:"locatie"`
+}
 
 func main() {
 	slog.Default()
@@ -79,12 +96,33 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		stallingen := gentopendata.Fetch[stalling.StallingInfo](url)
+		allItems := gentopendata.Fetch[*stalling.StallingInfo](url,
+			func(b []byte) *stalling.StallingInfo {
+				var in ApiData
+				json.Unmarshal(b, &in)
+
+				out := stalling.StallingInfo{}
+				out.Name = in.Name
+				out.Parkingcapacity = int32(in.Parkingcapacity)
+				out.Vacantspaces = int32(in.Vacantspaces)
+				out.Naam = in.Naam
+				out.Parking = in.Parking
+				out.Occupation = in.Occupation
+				out.Infotekst = in.Infotekst
+				out.Enginfotekst = in.Enginfotekst
+				out.Frinfotekst = in.Frinfotekst
+				out.Locatie = &stalling.Location2{
+					Lon: in.Locatie.Lon,
+					Lat: in.Locatie.Lat,
+				}
+
+				return &out
+			},
+		)
 		ctx := context.Background()
-		for i := range stallingen {
-			stalling := &stallingen[i]
+		for _, item := range allItems {
 			wg.Add(1)
-			stallingByte, err := serde.Encode(stalling)
+			stallingByte, err := serde.Encode(item)
 			if err != nil {
 				slog.Error("Bike encoding", "error", err)
 				os.Exit(1)
