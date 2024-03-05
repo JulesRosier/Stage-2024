@@ -141,7 +141,7 @@ func main() {
 				out.IsReserved = in.IsReserved
 				out.IsDisabled = in.IsDisabled
 				out.RentalUris = in.RentalUris
-				out.Loc = &common.Location{
+				out.Location = &common.Location{
 					Lon: in.Loc.Lon,
 					Lat: in.Loc.Lat,
 				}

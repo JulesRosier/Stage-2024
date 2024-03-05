@@ -11,5 +11,5 @@ message BoltLocation {
   int32 is_reserved = 5;
   int32 is_disabled = 6;
   string rental_uris = 7;
-  common.Location loc = 8;
+  common.Location location = 8;
 }

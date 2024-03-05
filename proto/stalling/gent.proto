@@ -13,5 +13,5 @@ message GentStallingInfo {
     int32 freeplaces = 5;
     int32 occupiedplaces = 6;
     int32 bezetting = 7;
-    GeoPoint2 geo_point_2d = 8;
+    GeoPoint2 location = 8;
 }

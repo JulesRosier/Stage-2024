@@ -107,7 +107,7 @@ func main() {
 				out.Freeplaces = int32(in.Freeplaces)
 				out.Occupiedplaces = int32(in.Occupiedplaces)
 				out.Bezetting = int32(in.Bezetting)
-				out.GeoPoint_2D = &stalling.GeoPoint2{
+				out.Location = &stalling.GeoPoint2{
 					Lon: in.Geopoint.Lon,
 					Lat: in.Geopoint.Lat,
 				}

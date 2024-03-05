@@ -141,7 +141,7 @@ func main() {
 				out.Name = in.Name
 				out.BikesInUse = int32(in.BikesInUse)
 				out.BikesAvailable = int32(in.BikesAvailable)
-				out.Geopoint = &common.Location{
+				out.Location = &common.Location{
 					Lon: in.GeoPoint.Lon,
 					Lat: in.GeoPoint.Lat,
 				}

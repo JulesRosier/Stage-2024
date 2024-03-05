@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"stage2024/pkg/gentopendata"
+	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stalling"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -111,7 +112,7 @@ func main() {
 				out.Infotekst = in.Infotekst
 				out.Enginfotekst = in.Enginfotekst
 				out.Frinfotekst = in.Frinfotekst
-				out.Locatie = &stalling.Location2{
+				out.Location = &common.Location{
 					Lon: in.Locatie.Lon,
 					Lat: in.Locatie.Lat,
 				}

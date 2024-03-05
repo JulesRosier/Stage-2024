@@ -13,5 +13,5 @@ message StallingInfo {
     string infotekst = 7;
     string enginfotekst = 8;
     string frinfotekst = 9;
-    common.Location locatie = 10;
+    common.Location location = 10;
 }
