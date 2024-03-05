@@ -10,12 +10,12 @@ import (
 
 const maxRequestCount = 100
 
-type fetchData[T any] struct {
-	TotalCount int `json:"total_count"`
-	Results    []T `json:"results"`
+type fetchData struct {
+	TotalCount int               `json:"total_count"`
+	Results    []json.RawMessage `json:"results"`
 }
 
-func Fetch[T any](url string) []T {
+func Fetch[T any](url string, f func([]byte) T) []T {
 	offset := 0
 	totalCount := 1
 
@@ -23,12 +23,14 @@ func Fetch[T any](url string) []T {
 
 	for offset < totalCount {
 		data, err := request[T](url, offset)
+		for _, x := range data.Results {
+			allItems = append(allItems, f(x))
+		}
 		if err != nil {
-			fmt.Println("Error fetching data:", err)
+			slog.Error("Error fetching data:", "error", err)
 			break
 		}
 		totalCount = data.TotalCount
-		allItems = append(allItems, data.Results...)
 		offset += len(data.Results)
 	}
 
@@ -37,10 +39,10 @@ func Fetch[T any](url string) []T {
 	return allItems
 }
 
-func request[T any](url string, offset int) (fetchData[T], error) {
+func request[T any](url string, offset int) (fetchData, error) {
 	slog.Info("Makking request", "offset", offset)
 	resp, err := http.Get(fmt.Sprintf("%s?limit=%d&offset=%d", url, maxRequestCount, offset))
-	var data fetchData[T]
+	var data fetchData
 	if err != nil {
 		return data, err
 	}
@@ -55,6 +57,7 @@ func request[T any](url string, offset int) (fetchData[T], error) {
 	if err != nil {
 		return data, err
 	}
+	// fmt.Println(data)
 	slog.Info("Request result", "item_count", len(data.Results))
 
 	return data, nil

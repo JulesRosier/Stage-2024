@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"log/slog"
 	"os"
@@ -15,14 +16,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type BikeData struct {
-	TotalCount int                  `json:"total_count"`
-	Results    []bikes.BoltLocation `json:"results"`
-}
-
 // updates every 5 minutes
 const fetchdelay = time.Minute * 5
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
+
+type ApiData struct {
+	BikeId             string `json:"bike_id"`
+	CurrentRangeMeters int32  `json:"current_range_meters"`
+	PricingPlanId      string `json:"pricing_plan_id"`
+	VehicleTypeId      string `json:"vehicle_type_id"`
+	IsReserved         int32  `json:"is_reserved"`
+	IsDisabled         int32  `json:"is_disabled"`
+	RentalUris         string `json:"rental_uris"`
+	Loc                struct {
+		Lon float64 `json:"lon"`
+		Lat float64 `json:"lat"`
+	}
+}
 
 func main() {
 	slog.Default()
@@ -86,10 +96,28 @@ func main() {
 
 	slog.Info("Producing records")
 	for {
-		allBikes := gentopendata.Fetch[bikes.BoltLocation](url)
+		allBikes := gentopendata.Fetch[*bikes.BoltLocation](url,
+			func(b []byte) *bikes.BoltLocation {
+				var in ApiData
+				json.Unmarshal(b, &in)
+
+				out := bikes.BoltLocation{}
+				out.BikeId = in.BikeId
+				out.CurrentRangeMeters = in.CurrentRangeMeters
+				out.PricingPlanId = in.PricingPlanId
+				out.VehicleTypeId = in.VehicleTypeId
+				out.IsReserved = in.IsReserved
+				out.IsDisabled = in.IsDisabled
+				out.RentalUris = in.RentalUris
+				out.Loc = &bikes.Location{
+					Lon: in.Loc.Lon,
+					Lat: in.Loc.Lat,
+				}
+				return &out
+			},
+		)
 		ctx := context.Background()
-		for i := range allBikes {
-			bike := &allBikes[i]
+		for _, bike := range allBikes {
 			wg.Add(1)
 			bikeByte, err := serde.Encode(bike)
 			if err != nil {
