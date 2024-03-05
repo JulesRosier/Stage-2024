@@ -34,8 +34,9 @@ func Fetch[T any](url string, f func([]byte) T) []T {
 		offset += len(data.Results)
 	}
 
-	slog.Info("Total expented items", "count", totalCount)
+	slog.Info("Total expected items", "count", totalCount)
 	slog.Info("Total items fetched", "count", len(allItems))
+
 	return allItems
 }
 

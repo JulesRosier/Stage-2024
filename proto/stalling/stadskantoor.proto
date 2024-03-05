@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message Location2 {
+    double lon = 1;
+    double lat = 2;
+  }
+
+message StallingInfo {
+    string name = 1;
+    float parkingcapacity = 2;
+    float vacantspaces = 3;
+    string naam = 4;
+    string parking = 5;
+    int32 occupation = 6;
+    string infotekst = 7;
+    string enginfotekst = 8;
+    string frinfotekst = 9;
+    Location2 locatie = 10;
+}
