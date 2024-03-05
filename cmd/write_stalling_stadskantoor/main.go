@@ -7,13 +7,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
-
 	"stage2024/pkg/gentopendata"
-	"stage2024/pkg/helper"
+	h "stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stalling"
+	"sync"
+	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -51,9 +50,7 @@ func main() {
 		kgo.SeedBrokers(*seed),
 		kgo.AllowAutoTopicCreation(),
 	)
-	if err != nil {
-		panic(err)
-	}
+	h.MaybeDieErr(err)
 	defer cl.Close()
 
 	slog.Info("Starting schema registry client...", "host", *registry)
@@ -73,7 +70,7 @@ func main() {
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
 		Schema:     string(file),
 		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{helper.ReferenceLocation(rcl)},
+		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
 	})
 	if err != nil {
 		slog.Error(err.Error())
