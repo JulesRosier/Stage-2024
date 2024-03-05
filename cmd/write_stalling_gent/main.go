@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"stage2024/pkg/gentopendata"
-	"stage2024/pkg/helper"
+	h "stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stalling"
 
@@ -49,34 +49,23 @@ func main() {
 		kgo.SeedBrokers(*seed),
 		kgo.AllowAutoTopicCreation(),
 	)
-	if err != nil {
-		panic(err)
-	}
+	h.MaybeDieErr(err)
 	defer cl.Close()
 
 	slog.Info("Starting schema registry client...", "host", *registry)
 	rcl, err := sr.NewClient(sr.URLs(*registry))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 
 	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_gent_proto.Path()))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
 		Schema:     string(file),
 		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{helper.ReferenceLocation(rcl)},
+		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
 	})
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 	slog.Info("Created or reusing schema", "subject", sub, "version", ss.Version, "id", ss.ID)
 
 	var serde sr.Serde
@@ -100,8 +89,10 @@ func main() {
 		allItems := gentopendata.Fetch[*stalling.GentStallingInfo](url,
 			func(b []byte) *stalling.GentStallingInfo {
 				var in ApiData
-				json.Unmarshal(b, &in)
-
+				err := json.Unmarshal(b, &in)
+				if err != nil {
+					slog.Warn("Failed to unmarshal", "error", err)
+				}
 				out := stalling.GentStallingInfo{}
 				out.Time = in.Time
 				out.Facilityname = in.Facilityname
@@ -122,16 +113,11 @@ func main() {
 		for _, item := range allItems {
 			wg.Add(1)
 			stallingByte, err := serde.Encode(item)
-			if err != nil {
-				slog.Error("Encoding", "error", err)
-				os.Exit(1)
-			}
+			h.MaybeDie(err, "Encoding error")
 			record := &kgo.Record{Topic: "stalling-gent", Value: stallingByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
-				if err != nil {
-					slog.Error("Produce error", "error", err)
-				}
+				h.MaybeDie(err, "Produce error")
 			})
 		}
 		wg.Wait()

@@ -55,16 +55,10 @@ func main() {
 
 	slog.Info("Starting schema registry client...", "host", *registry)
 	rcl, err := sr.NewClient(sr.URLs(*registry))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 
 	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
@@ -72,10 +66,7 @@ func main() {
 		Type:       sr.TypeProtobuf,
 		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
 	})
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	h.MaybeDieErr(err)
 	slog.Info("Created or reusing schema", "subject", sub, "version", ss.Version, "id", ss.ID)
 
 	var serde sr.Serde
@@ -99,8 +90,11 @@ func main() {
 		allItems := gentopendata.Fetch[*stalling.StallingInfo](url,
 			func(b []byte) *stalling.StallingInfo {
 				var in ApiData
-				json.Unmarshal(b, &in)
-
+				err := json.Unmarshal(b, &in)
+				if err != nil {
+					slog.Warn("Failed to unmarshal", "error", err)
+					return nil
+				}
 				out := stalling.StallingInfo{}
 				out.Name = in.Name
 				out.Parkingcapacity = int32(in.Parkingcapacity)
@@ -123,16 +117,12 @@ func main() {
 		for _, item := range allItems {
 			wg.Add(1)
 			stallingByte, err := serde.Encode(item)
-			if err != nil {
-				slog.Error("Bike encoding", "error", err)
-				os.Exit(1)
-			}
+			h.MaybeDie(err, "Encoding")
+
 			record := &kgo.Record{Topic: "stalling-stadskantoor", Value: stallingByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
-				if err != nil {
-					slog.Error("Produce error", "error", err)
-				}
+				h.MaybeDie(err, "Produce error")
 			})
 		}
 		wg.Wait()
