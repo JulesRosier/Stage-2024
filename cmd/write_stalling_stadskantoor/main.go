@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"stage2024/pkg/gentopendata"
+	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stalling"
 
@@ -70,8 +71,9 @@ func main() {
 
 	sub := *topic + "-value"
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema: string(file),
-		Type:   sr.TypeProtobuf,
+		Schema:     string(file),
+		Type:       sr.TypeProtobuf,
+		References: []sr.SchemaReference{helper.ReferenceLocation(rcl)},
 	})
 	if err != nil {
 		slog.Error(err.Error())
@@ -86,7 +88,7 @@ func main() {
 		sr.EncodeFn(func(a any) ([]byte, error) {
 			return proto.Marshal(a.(*stalling.StallingInfo))
 		}),
-		sr.Index(1),
+		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
 			return proto.Unmarshal(b, a.(*stalling.StallingInfo))
 		}),

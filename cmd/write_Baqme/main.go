@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"stage2024/pkg/gentopendata"
+	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
 
@@ -20,7 +21,7 @@ import (
 )
 
 // updates every 10 minutes
-const fetchdelay = time.Minute * 10
+const fetchdelay = time.Second * 10
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 
 type ApiData struct {
@@ -61,29 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := common.File_common_location_proto.Path()
-	file, err := os.ReadFile(filepath.Join("./proto", p))
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
-	ssLocation, err := rcl.CreateSchema(context.Background(), p,
-		sr.Schema{
-			Schema: string(file),
-			Type:   sr.TypeProtobuf,
-		},
-	)
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
-	slog.Info("created or reusing schema",
-		"subject", ssLocation.Subject,
-		"version", ssLocation.Version,
-		"id", ssLocation.ID,
-	)
-
-	file, err = os.ReadFile(filepath.Join("./proto", bikes.File_bikes_baqme_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_baqme_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -91,8 +70,9 @@ func main() {
 
 	sub := *topic + "-value"
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema: string(file),
-		Type:   sr.TypeProtobuf,
+		Schema:     string(file),
+		Type:       sr.TypeProtobuf,
+		References: []sr.SchemaReference{helper.ReferenceLocation(rcl)},
 	})
 	if err != nil {
 		slog.Error(err.Error())
@@ -107,7 +87,7 @@ func main() {
 		sr.EncodeFn(func(a any) ([]byte, error) {
 			return proto.Marshal(a.(*bikes.BaqmeLocation))
 		}),
-		sr.Index(1),
+		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
 			return proto.Unmarshal(b, a.(*bikes.BaqmeLocation))
 		}),

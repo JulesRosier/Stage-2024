@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"stage2024/pkg/gentopendata"
+	"stage2024/pkg/helper"
+	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stalling"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -67,8 +69,9 @@ func main() {
 
 	sub := *topic + "-value"
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema: string(file),
-		Type:   sr.TypeProtobuf,
+		Schema:     string(file),
+		Type:       sr.TypeProtobuf,
+		References: []sr.SchemaReference{helper.ReferenceLocation(rcl)},
 	})
 	if err != nil {
 		slog.Error(err.Error())
@@ -83,7 +86,7 @@ func main() {
 		sr.EncodeFn(func(a any) ([]byte, error) {
 			return proto.Marshal(a.(*stalling.GentStallingInfo))
 		}),
-		sr.Index(1),
+		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
 			return proto.Unmarshal(b, a.(*stalling.GentStallingInfo))
 		}),
@@ -107,7 +110,7 @@ func main() {
 				out.Freeplaces = int32(in.Freeplaces)
 				out.Occupiedplaces = int32(in.Occupiedplaces)
 				out.Bezetting = int32(in.Bezetting)
-				out.Location = &stalling.GeoPoint2{
+				out.Location = &common.Location{
 					Lon: in.Geopoint.Lon,
 					Lat: in.Geopoint.Lat,
 				}
