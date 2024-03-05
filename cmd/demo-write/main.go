@@ -2,13 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"os"
+	"stage2024/pkg/gentopendata"
 	"stage2024/pkg/protogen/bikes"
 	"sync"
 	"time"
@@ -23,56 +20,9 @@ type BikeData struct {
 	Results    []bikes.BoltLocation `json:"results"`
 }
 
-const maxRequestCount = 100
-
 // updates every 5 minutes
 const fetchdelay = time.Minute * 5
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
-
-func fetchData(url string, offset int) (BikeData, error) {
-	slog.Info("Makking request", "offset", offset)
-	resp, err := http.Get(fmt.Sprintf("%s?limit=%d&offset=%d", url, maxRequestCount, offset))
-	if err != nil {
-		return BikeData{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return BikeData{}, err
-	}
-
-	var data BikeData
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return BikeData{}, err
-	}
-	slog.Info("Request result", "bike_count", len(data.Results))
-
-	return data, nil
-}
-
-func fetchBikes() []bikes.BoltLocation {
-	offset := 0
-	totalCount := 1
-
-	allBikes := make([]bikes.BoltLocation, 0)
-
-	for offset < totalCount {
-		data, err := fetchData(url, offset)
-		if err != nil {
-			fmt.Println("Error fetching data:", err)
-			break
-		}
-		totalCount = data.TotalCount
-		allBikes = append(allBikes, data.Results...)
-		offset += len(data.Results)
-	}
-
-	slog.Info("Total expented bikes", "count", totalCount)
-	slog.Info("Total bikes fetched", "count", len(allBikes))
-	return allBikes
-}
 
 func main() {
 	slog.Default()
@@ -136,7 +86,7 @@ func main() {
 
 	slog.Info("Producing records")
 	for {
-		allBikes := fetchBikes()
+		allBikes := gentopendata.Fetch[bikes.BoltLocation](url)
 		ctx := context.Background()
 		for i := range allBikes {
 			bike := &allBikes[i]
