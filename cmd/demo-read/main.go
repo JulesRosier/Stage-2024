@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"stage2024/pkg/protogen/bikes"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -38,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile("./proto/bikes/Bolt.proto")
+	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_Bolt_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"stage2024/pkg/gentopendata"
 	"stage2024/pkg/protogen/occupations"
 	"sync"
@@ -61,7 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile("./proto/occupations/BlueBike.proto")
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_BlueBike_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
