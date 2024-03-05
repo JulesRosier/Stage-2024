@@ -1,9 +1,6 @@
 syntax = "proto3";
 
-message Geopoint {
-  double lon = 1;
-  double lat = 2;
-}
+import "common/location.proto";
 
 message BaqmeLocation {
   string bike_id = 1;
@@ -13,5 +10,5 @@ message BaqmeLocation {
   int32 is_disabled = 5;
   string vehicle_type_id = 6;
   string rental_uris = 7;
-  Geopoint geopoint = 8;
+  common.Location location = 8;
 }

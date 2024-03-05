@@ -12,12 +12,14 @@ import (
 
 	"stage2024/pkg/gentopendata"
 	"stage2024/pkg/protogen/bikes"
+	"stage2024/pkg/protogen/common"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/proto"
 )
 
+// updates every 10 minutes
 const fetchdelay = time.Minute * 10
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 
@@ -59,7 +61,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_Baqme_proto.Path()))
+	p := common.File_common_location_proto.Path()
+	file, err := os.ReadFile(filepath.Join("./proto", p))
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	ssLocation, err := rcl.CreateSchema(context.Background(), p,
+		sr.Schema{
+			Schema: string(file),
+			Type:   sr.TypeProtobuf,
+		},
+	)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	slog.Info("created or reusing schema",
+		"subject", ssLocation.Subject,
+		"version", ssLocation.Version,
+		"id", ssLocation.ID,
+	)
+
+	file, err = os.ReadFile(filepath.Join("./proto", bikes.File_bikes_baqme_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -107,7 +131,7 @@ func main() {
 				out.IsDisabled = in.Is_disabled
 				out.VehicleTypeId = in.Vehicle_type_id
 				out.RentalUris = in.Rental_uris
-				out.Geopoint = &bikes.Geopoint{
+				out.Location = &common.Location{
 					Lon: in.Geopoint.Lon,
 					Lat: in.Geopoint.Lat,
 				}
