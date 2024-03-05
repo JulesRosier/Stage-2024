@@ -23,7 +23,7 @@ import (
 // updates every 5 minutes
 const fetchdelay = time.Minute * 5
 
-const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records"
+//const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records"
 
 type ApiData struct {
 	LastSeen       time.Time `json:"last_seen"`
@@ -42,6 +42,11 @@ type ApiData struct {
 
 func main() {
 	slog.Default()
+
+	urls := []string{"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records",
+		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-dampoort/records",
+		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-st-denijslaan/records",
+		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-merelbeke-drongen-wondelgem/records"}
 
 	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
 	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
@@ -94,36 +99,38 @@ func main() {
 
 	slog.Info("Producing records")
 	for {
-		allItems := gentopendata.Fetch[*occupations.BlueBikeOccupation](url,
-			func(b []byte) *occupations.BlueBikeOccupation {
-				var in ApiData
-				json.Unmarshal(b, &in)
+		for _, url := range urls {
+			allItems := gentopendata.Fetch[*occupations.BlueBikeOccupation](url,
+				func(b []byte) *occupations.BlueBikeOccupation {
+					var in ApiData
+					json.Unmarshal(b, &in)
 
-				out := occupations.BlueBikeOccupation{}
-				out.LastSeen = timestamppb.New(in.LastSeen)
-				out.Id = int32(in.Id)
-				out.Name = in.Name
-				out.BikesInUse = int32(in.BikesInUse)
-				out.BikesAvailable = int32(in.BikesAvailable)
-				out.Location = &common.Location{
-					Lon: in.GeoPoint.Lon,
-					Lat: in.GeoPoint.Lat,
-				}
-				out.Type = in.Type
+					out := occupations.BlueBikeOccupation{}
+					out.LastSeen = timestamppb.New(in.LastSeen)
+					out.Id = int32(in.Id)
+					out.Name = in.Name
+					out.BikesInUse = int32(in.BikesInUse)
+					out.BikesAvailable = int32(in.BikesAvailable)
+					out.Location = &common.Location{
+						Lon: in.GeoPoint.Lon,
+						Lat: in.GeoPoint.Lat,
+					}
+					out.Type = in.Type
 
-				return &out
-			},
-		)
-		ctx := context.Background()
-		for _, item := range allItems {
-			wg.Add(1)
-			itemByte, err := serde.Encode(item)
-			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: *topic, Value: itemByte}
-			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-				defer wg.Done()
-				h.MaybeDie(err, "Producing")
-			})
+					return &out
+				},
+			)
+			ctx := context.Background()
+			for _, item := range allItems {
+				wg.Add(1)
+				itemByte, err := serde.Encode(item)
+				h.MaybeDie(err, "Encoding error")
+				record := &kgo.Record{Topic: *topic, Value: itemByte}
+				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
+					defer wg.Done()
+					h.MaybeDie(err, "Producing")
+				})
+			}
 		}
 
 		wg.Wait()
