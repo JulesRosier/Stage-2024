@@ -1,9 +1,7 @@
 syntax = "proto3";
+package bikes;
 
-message Location {
-  double lon = 1;
-  double lat = 2;
-}
+import "common/location.proto";
 
 message BoltLocation {
   string bike_id = 1;
@@ -13,5 +11,5 @@ message BoltLocation {
   int32 is_reserved = 5;
   int32 is_disabled = 6;
   string rental_uris = 7;
-  Location loc = 8;
+  common.Location loc = 8;
 }

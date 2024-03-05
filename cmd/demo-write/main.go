@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"stage2024/pkg/gentopendata"
 	"stage2024/pkg/protogen/bikes"
+	"stage2024/pkg/protogen/common"
 	"sync"
 	"time"
 
@@ -59,17 +60,47 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_Bolt_proto.Path()))
+	p := common.File_common_location_proto.Path()
+	file, err := os.ReadFile(filepath.Join("./proto", p))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
+	ssLocation, err := rcl.CreateSchema(context.Background(), p,
+		sr.Schema{
+			Schema: string(file),
+			Type:   sr.TypeProtobuf,
+		},
+	)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	slog.Info("created or reusing schema",
+		"subject", ssLocation.Subject,
+		"version", ssLocation.Version,
+		"id", ssLocation.ID,
+	)
+
 	sub := *topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema: string(file),
-		Type:   sr.TypeProtobuf,
-	})
+	file, err = os.ReadFile(filepath.Join("./proto", bikes.File_bikes_bolt_proto.Path()))
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	ss, err := rcl.CreateSchema(context.Background(), sub,
+		sr.Schema{
+			Schema: string(file),
+			Type:   sr.TypeProtobuf,
+			References: []sr.SchemaReference{
+				{
+					Name:    p,
+					Subject: ssLocation.Subject,
+					Version: ssLocation.Version,
+				},
+			},
+		})
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -87,7 +118,7 @@ func main() {
 		sr.EncodeFn(func(a any) ([]byte, error) {
 			return proto.Marshal(a.(*bikes.BoltLocation))
 		}),
-		sr.Index(1),
+		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
 			return proto.Unmarshal(b, a.(*bikes.BoltLocation))
 		}),
@@ -110,7 +141,7 @@ func main() {
 				out.IsReserved = in.IsReserved
 				out.IsDisabled = in.IsDisabled
 				out.RentalUris = in.RentalUris
-				out.Loc = &bikes.Location{
+				out.Loc = &common.Location{
 					Lon: in.Loc.Lon,
 					Lat: in.Loc.Lat,
 				}

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"stage2024/pkg/gentopendata"
+	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/occupations"
 	"sync"
 	"time"
@@ -62,7 +63,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_BlueBike_proto.Path()))
+	p := common.File_common_location_proto.Path()
+	file, err := os.ReadFile(filepath.Join("./proto", p))
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	ssLocation, err := rcl.CreateSchema(context.Background(), p,
+		sr.Schema{
+			Schema: string(file),
+			Type:   sr.TypeProtobuf,
+		},
+	)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	slog.Info("created or reusing schema",
+		"subject", ssLocation.Subject,
+		"version", ssLocation.Version,
+		"id", ssLocation.ID,
+	)
+	file, err = os.ReadFile(filepath.Join("./proto", occupations.File_occupations_blue_bike_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -72,6 +95,13 @@ func main() {
 	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
 		Schema: string(file),
 		Type:   sr.TypeProtobuf,
+		References: []sr.SchemaReference{
+			{
+				Name:    p,
+				Subject: ssLocation.Subject,
+				Version: ssLocation.Version,
+			},
+		},
 	})
 	if err != nil {
 		slog.Error(err.Error())
@@ -90,7 +120,7 @@ func main() {
 		sr.EncodeFn(func(a any) ([]byte, error) {
 			return proto.Marshal(a.(*occupations.BlueBikeOccupation))
 		}),
-		sr.Index(1),
+		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
 			return proto.Unmarshal(b, a.(*occupations.BlueBikeOccupation))
 		}),
@@ -111,7 +141,7 @@ func main() {
 				out.Name = in.Name
 				out.BikesInUse = int32(in.BikesInUse)
 				out.BikesAvailable = int32(in.BikesAvailable)
-				out.Geopoint = &occupations.GeoPoint{
+				out.Geopoint = &common.Location{
 					Lon: in.GeoPoint.Lon,
 					Lat: in.GeoPoint.Lat,
 				}

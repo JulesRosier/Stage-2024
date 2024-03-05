@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	common "stage2024/pkg/protogen/common"
 	sync "sync"
 )
 
@@ -20,82 +21,27 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Location2 struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Lon float64 `protobuf:"fixed64,1,opt,name=lon,proto3" json:"lon,omitempty"`
-	Lat float64 `protobuf:"fixed64,2,opt,name=lat,proto3" json:"lat,omitempty"`
-}
-
-func (x *Location2) Reset() {
-	*x = Location2{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_stalling_stadskantoor_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Location2) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Location2) ProtoMessage() {}
-
-func (x *Location2) ProtoReflect() protoreflect.Message {
-	mi := &file_stalling_stadskantoor_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Location2.ProtoReflect.Descriptor instead.
-func (*Location2) Descriptor() ([]byte, []int) {
-	return file_stalling_stadskantoor_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Location2) GetLon() float64 {
-	if x != nil {
-		return x.Lon
-	}
-	return 0
-}
-
-func (x *Location2) GetLat() float64 {
-	if x != nil {
-		return x.Lat
-	}
-	return 0
-}
-
 type StallingInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name            string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Parkingcapacity int32      `protobuf:"varint,2,opt,name=parkingcapacity,proto3" json:"parkingcapacity,omitempty"`
-	Vacantspaces    int32      `protobuf:"varint,3,opt,name=vacantspaces,proto3" json:"vacantspaces,omitempty"`
-	Naam            string     `protobuf:"bytes,4,opt,name=naam,proto3" json:"naam,omitempty"`
-	Parking         string     `protobuf:"bytes,5,opt,name=parking,proto3" json:"parking,omitempty"`
-	Occupation      int32      `protobuf:"varint,6,opt,name=occupation,proto3" json:"occupation,omitempty"`
-	Infotekst       string     `protobuf:"bytes,7,opt,name=infotekst,proto3" json:"infotekst,omitempty"`
-	Enginfotekst    string     `protobuf:"bytes,8,opt,name=enginfotekst,proto3" json:"enginfotekst,omitempty"`
-	Frinfotekst     string     `protobuf:"bytes,9,opt,name=frinfotekst,proto3" json:"frinfotekst,omitempty"`
-	Locatie         *Location2 `protobuf:"bytes,10,opt,name=locatie,proto3" json:"locatie,omitempty"`
+	Name            string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Parkingcapacity int32            `protobuf:"varint,2,opt,name=parkingcapacity,proto3" json:"parkingcapacity,omitempty"`
+	Vacantspaces    int32            `protobuf:"varint,3,opt,name=vacantspaces,proto3" json:"vacantspaces,omitempty"`
+	Naam            string           `protobuf:"bytes,4,opt,name=naam,proto3" json:"naam,omitempty"`
+	Parking         string           `protobuf:"bytes,5,opt,name=parking,proto3" json:"parking,omitempty"`
+	Occupation      int32            `protobuf:"varint,6,opt,name=occupation,proto3" json:"occupation,omitempty"`
+	Infotekst       string           `protobuf:"bytes,7,opt,name=infotekst,proto3" json:"infotekst,omitempty"`
+	Enginfotekst    string           `protobuf:"bytes,8,opt,name=enginfotekst,proto3" json:"enginfotekst,omitempty"`
+	Frinfotekst     string           `protobuf:"bytes,9,opt,name=frinfotekst,proto3" json:"frinfotekst,omitempty"`
+	Locatie         *common.Location `protobuf:"bytes,10,opt,name=locatie,proto3" json:"locatie,omitempty"`
 }
 
 func (x *StallingInfo) Reset() {
 	*x = StallingInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_stalling_stadskantoor_proto_msgTypes[1]
+		mi := &file_stalling_stadskantoor_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -108,7 +54,7 @@ func (x *StallingInfo) String() string {
 func (*StallingInfo) ProtoMessage() {}
 
 func (x *StallingInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_stalling_stadskantoor_proto_msgTypes[1]
+	mi := &file_stalling_stadskantoor_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +67,7 @@ func (x *StallingInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StallingInfo.ProtoReflect.Descriptor instead.
 func (*StallingInfo) Descriptor() ([]byte, []int) {
-	return file_stalling_stadskantoor_proto_rawDescGZIP(), []int{1}
+	return file_stalling_stadskantoor_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *StallingInfo) GetName() string {
@@ -187,7 +133,7 @@ func (x *StallingInfo) GetFrinfotekst() string {
 	return ""
 }
 
-func (x *StallingInfo) GetLocatie() *Location2 {
+func (x *StallingInfo) GetLocatie() *common.Location {
 	if x != nil {
 		return x.Locatie
 	}
@@ -198,10 +144,9 @@ var File_stalling_stadskantoor_proto protoreflect.FileDescriptor
 
 var file_stalling_stadskantoor_proto_rawDesc = []byte{
 	0x0a, 0x1b, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0x2f, 0x73, 0x74, 0x61, 0x64, 0x73,
-	0x6b, 0x61, 0x6e, 0x74, 0x6f, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2f, 0x0a,
-	0x09, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x32, 0x12, 0x10, 0x0a, 0x03, 0x6c, 0x6f,
-	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x01, 0x52, 0x03, 0x6c, 0x6f, 0x6e, 0x12, 0x10, 0x0a, 0x03,
-	0x6c, 0x61, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x01, 0x52, 0x03, 0x6c, 0x61, 0x74, 0x22, 0xc8,
+	0x6b, 0x61, 0x6e, 0x74, 0x6f, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x08, 0x73,
+	0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0x1a, 0x15, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2f,
+	0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xce,
 	0x02, 0x0a, 0x0c, 0x53, 0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0x49, 0x6e, 0x66, 0x6f, 0x12,
 	0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e,
 	0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x0f, 0x70, 0x61, 0x72, 0x6b, 0x69, 0x6e, 0x67, 0x63, 0x61,
@@ -220,13 +165,18 @@ var file_stalling_stadskantoor_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x0c, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x66, 0x6f, 0x74, 0x65, 0x6b, 0x73,
 	0x74, 0x12, 0x20, 0x0a, 0x0b, 0x66, 0x72, 0x69, 0x6e, 0x66, 0x6f, 0x74, 0x65, 0x6b, 0x73, 0x74,
 	0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x66, 0x72, 0x69, 0x6e, 0x66, 0x6f, 0x74, 0x65,
-	0x6b, 0x73, 0x74, 0x12, 0x24, 0x0a, 0x07, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x65, 0x18, 0x0a,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x4c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x32,
-	0x52, 0x07, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x65, 0x42, 0x36, 0x42, 0x11, 0x53, 0x74, 0x61,
-	0x64, 0x73, 0x6b, 0x61, 0x6e, 0x74, 0x6f, 0x6f, 0x72, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01,
-	0x5a, 0x1f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x32, 0x30, 0x32, 0x34, 0x2f, 0x70, 0x6b, 0x67, 0x2f,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e,
-	0x67, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6b, 0x73, 0x74, 0x12, 0x2a, 0x0a, 0x07, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x65, 0x18, 0x0a,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x4c, 0x6f,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x65, 0x42,
+	0x82, 0x01, 0x0a, 0x0c, 0x63, 0x6f, 0x6d, 0x2e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67,
+	0x42, 0x11, 0x53, 0x74, 0x61, 0x64, 0x73, 0x6b, 0x61, 0x6e, 0x74, 0x6f, 0x6f, 0x72, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x1f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x32, 0x30, 0x32, 0x34,
+	0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x67, 0x65, 0x6e, 0x2f, 0x73, 0x74,
+	0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0xa2, 0x02, 0x03, 0x53, 0x58, 0x58, 0xaa, 0x02, 0x08, 0x53,
+	0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0xca, 0x02, 0x08, 0x53, 0x74, 0x61, 0x6c, 0x6c, 0x69,
+	0x6e, 0x67, 0xe2, 0x02, 0x14, 0x53, 0x74, 0x61, 0x6c, 0x6c, 0x69, 0x6e, 0x67, 0x5c, 0x47, 0x50,
+	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x08, 0x53, 0x74, 0x61, 0x6c,
+	0x6c, 0x69, 0x6e, 0x67, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -241,13 +191,13 @@ func file_stalling_stadskantoor_proto_rawDescGZIP() []byte {
 	return file_stalling_stadskantoor_proto_rawDescData
 }
 
-var file_stalling_stadskantoor_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_stalling_stadskantoor_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_stalling_stadskantoor_proto_goTypes = []interface{}{
-	(*Location2)(nil),    // 0: Location2
-	(*StallingInfo)(nil), // 1: StallingInfo
+	(*StallingInfo)(nil),    // 0: stalling.StallingInfo
+	(*common.Location)(nil), // 1: common.Location
 }
 var file_stalling_stadskantoor_proto_depIdxs = []int32{
-	0, // 0: StallingInfo.locatie:type_name -> Location2
+	1, // 0: stalling.StallingInfo.locatie:type_name -> common.Location
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -262,18 +212,6 @@ func file_stalling_stadskantoor_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_stalling_stadskantoor_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Location2); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_stalling_stadskantoor_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*StallingInfo); i {
 			case 0:
 				return &v.state
@@ -292,7 +230,7 @@ func file_stalling_stadskantoor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_stalling_stadskantoor_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

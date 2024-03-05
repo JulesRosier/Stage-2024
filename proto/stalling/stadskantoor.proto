@@ -1,9 +1,7 @@
 syntax = "proto3";
+package stalling;
 
-message Location2 {
-    double lon = 1;
-    double lat = 2;
-  }
+import "common/location.proto";
 
 message StallingInfo {
     string name = 1;
@@ -15,5 +13,5 @@ message StallingInfo {
     string infotekst = 7;
     string enginfotekst = 8;
     string frinfotekst = 9;
-    Location2 locatie = 10;
+    common.Location locatie = 10;
 }
