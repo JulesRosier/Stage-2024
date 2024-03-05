@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message GeoPoint {
+  double lon = 1;
+  double lat = 2;
+}
+
+message BlueBikeOccupation {
+  google.protobuf.Timestamp last_seen = 1;
+  int32 id = 2;
+  string name = 3;
+  int32 bikes_in_use = 4;
+  int32 bikes_available = 5;
+  GeoPoint geopoint = 8;
+  string type = 9;
+}
