@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -43,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile("./proto/stalling/stadskantoor.proto")
+	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)

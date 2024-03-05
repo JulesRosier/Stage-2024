@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"stage2024/pkg/protogen/stalling"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -37,8 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 	//stalling.File_stalling_stadskantoor_proto.Path()
-	fmt.Println(stalling.File_stalling_stadskantoor_proto.Path())
-	file, err := os.ReadFile("./proto/stalling/stadskantoor.proto")
+	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
