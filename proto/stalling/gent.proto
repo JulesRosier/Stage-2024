@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message GeoPoint2 {
+    double lon = 1;
+    double lat = 2;
+  }
+
+message GentStallingInfo {
+    string time = 1;
+    string facilityname = 2;
+    string id = 3;
+    int32 totalplaces = 4;
+    int32 freeplaces = 5;
+    int32 occupiedplaces = 6;
+    int32 bezetting = 7;
+    GeoPoint2 geo_point_2d = 8;
+}

@@ -18,23 +18,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const fetchdelay = time.Minute * 5
-const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
+const fetchdelay = time.Minute * 1
+const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezettingen-fietsenstallingen-gent/records"
 
 type ApiData struct {
-	Name            string  `json:"name"`
-	Parkingcapacity float32 `json:"parkingCapacity"`
-	Vacantspaces    float32 `json:"vacantSpaces"`
-	Naam            string  `json:"naam"`
-	Parking         string  `json:"parking"`
-	Occupation      int32   `json:"occupation"`
-	Infotekst       string  `json:"infotekst"`
-	Enginfotekst    string  `json:"enginfotekst"`
-	Frinfotekst     string  `json:"frinfotekst"`
-	Locatie         struct {
+	Time           string `json:"time"`
+	Facilityname   string `json:"facilityname"`
+	Id             string `json:"id"`
+	Totalplaces    int32  `json:"totalplaces"`
+	Freeplaces     int32  `json:"freeplaces"`
+	Occupiedplaces int32  `json:"occupiedplaces"`
+	Bezetting      int32  `json:"bezetting"`
+	Geopoint       struct {
 		Lon float64 `json:"lon"`
 		Lat float64 `json:"lat"`
-	} `json:"locatie"`
+	}
 }
 
 func main() {
@@ -42,7 +40,7 @@ func main() {
 
 	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
 	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "stadskantoor", "topic to produce to and consume from")
+	topic := flag.String("topic", "stalling_gent", "topic to produce to and consume from")
 
 	slog.Info("Starting kafka client...", "seedbroker", *seed)
 	cl, err := kgo.NewClient(
@@ -61,7 +59,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_gent_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -81,13 +79,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&stalling.StallingInfo{},
+		&stalling.GentStallingInfo{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*stalling.StallingInfo))
+			return proto.Marshal(a.(*stalling.GentStallingInfo))
 		}),
 		sr.Index(1),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*stalling.StallingInfo))
+			return proto.Unmarshal(b, a.(*stalling.GentStallingInfo))
 		}),
 	)
 
@@ -96,24 +94,22 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		allItems := gentopendata.Fetch[*stalling.StallingInfo](url,
-			func(b []byte) *stalling.StallingInfo {
+		allItems := gentopendata.Fetch[*stalling.GentStallingInfo](url,
+			func(b []byte) *stalling.GentStallingInfo {
 				var in ApiData
 				json.Unmarshal(b, &in)
 
-				out := stalling.StallingInfo{}
-				out.Name = in.Name
-				out.Parkingcapacity = int32(in.Parkingcapacity)
-				out.Vacantspaces = int32(in.Vacantspaces)
-				out.Naam = in.Naam
-				out.Parking = in.Parking
-				out.Occupation = in.Occupation
-				out.Infotekst = in.Infotekst
-				out.Enginfotekst = in.Enginfotekst
-				out.Frinfotekst = in.Frinfotekst
-				out.Locatie = &stalling.Location2{
-					Lon: in.Locatie.Lon,
-					Lat: in.Locatie.Lat,
+				out := stalling.GentStallingInfo{}
+				out.Time = in.Time
+				out.Facilityname = in.Facilityname
+				out.Id = in.Id
+				out.Totalplaces = int32(in.Totalplaces)
+				out.Freeplaces = int32(in.Freeplaces)
+				out.Occupiedplaces = int32(in.Occupiedplaces)
+				out.Bezetting = int32(in.Bezetting)
+				out.GeoPoint_2D = &stalling.GeoPoint2{
+					Lon: in.Geopoint.Lon,
+					Lat: in.Geopoint.Lat,
 				}
 
 				return &out
@@ -124,10 +120,10 @@ func main() {
 			wg.Add(1)
 			stallingByte, err := serde.Encode(item)
 			if err != nil {
-				slog.Error("Bike encoding", "error", err)
+				slog.Error("Encoding", "error", err)
 				os.Exit(1)
 			}
-			record := &kgo.Record{Topic: "stadskantoor", Value: stallingByte}
+			record := &kgo.Record{Topic: "stalling_gent", Value: stallingByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				if err != nil {
