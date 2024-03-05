@@ -43,7 +43,7 @@ func main() {
 
 	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
 	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "stalling_stadskantoor", "topic to produce to and consume from")
+	topic := flag.String("topic", "stalling-stadskantoor", "topic to produce to and consume from")
 
 	slog.Info("Starting kafka client...", "seedbroker", *seed)
 	cl, err := kgo.NewClient(
@@ -128,7 +128,7 @@ func main() {
 				slog.Error("Bike encoding", "error", err)
 				os.Exit(1)
 			}
-			record := &kgo.Record{Topic: "stalling_stadskantoor", Value: stallingByte}
+			record := &kgo.Record{Topic: "stalling-stadskantoor", Value: stallingByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				if err != nil {
