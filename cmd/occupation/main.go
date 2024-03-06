@@ -99,6 +99,12 @@ func main() {
 
 	slog.Info("Producing records")
 	for {
+		wg.Add(1)
+		go func() {
+			slog.Info("Sleeping", "time", fetchdelay)
+			time.Sleep(fetchdelay)
+			wg.Done()
+		}()
 		for _, url := range urls {
 			allItems := gentopendata.Fetch[*occupations.BlueBikeOccupation](url,
 				func(b []byte) *occupations.BlueBikeOccupation {
@@ -135,7 +141,5 @@ func main() {
 
 		wg.Wait()
 		slog.Info("uploaded all records")
-		slog.Info("Sleeping", "time", fetchdelay)
-		time.Sleep(fetchdelay)
 	}
 }
