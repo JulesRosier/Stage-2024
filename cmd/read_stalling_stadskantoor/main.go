@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"stage2024/pkg/protogen/stalling"
+	"stage2024/pkg/protogen/occupations"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 	//stalling.File_stalling_stadskantoor_proto.Path()
-	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_stadskantoor_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -63,13 +63,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&stalling.StallingInfo{},
+		&occupations.StallingInfo{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*stalling.StallingInfo))
+			return proto.Marshal(a.(*occupations.StallingInfo))
 		}),
 		sr.Index(1),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*stalling.StallingInfo))
+			return proto.Unmarshal(b, a.(*occupations.StallingInfo))
 		}),
 	)
 	for {
@@ -81,7 +81,7 @@ func main() {
 		iter := fetches.RecordIter()
 		for !iter.Done() {
 			record := iter.Next()
-			var stalling stalling.StallingInfo
+			var stalling occupations.StallingInfo
 			err := serde.Decode(record.Value, &stalling)
 			if err != nil {
 				slog.Error(err.Error())

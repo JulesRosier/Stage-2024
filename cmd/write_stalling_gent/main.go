@@ -13,7 +13,7 @@ import (
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
-	"stage2024/pkg/protogen/stalling"
+	"stage2024/pkg/protogen/occupations"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -56,7 +56,7 @@ func main() {
 	rcl, err := sr.NewClient(sr.URLs(*registry))
 	h.MaybeDieErr(err)
 
-	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_gent_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_gentstalling_proto.Path()))
 	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
@@ -71,13 +71,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&stalling.GentStallingInfo{},
+		&occupations.GentStallingInfo{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*stalling.GentStallingInfo))
+			return proto.Marshal(a.(*occupations.GentStallingInfo))
 		}),
 		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*stalling.GentStallingInfo))
+			return proto.Unmarshal(b, a.(*occupations.GentStallingInfo))
 		}),
 	)
 
@@ -86,14 +86,14 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		allItems := gentopendata.Fetch[*stalling.GentStallingInfo](url,
-			func(b []byte) *stalling.GentStallingInfo {
+		allItems := gentopendata.Fetch[*occupations.GentStallingInfo](url,
+			func(b []byte) *occupations.GentStallingInfo {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
 				if err != nil {
 					slog.Warn("Failed to unmarshal", "error", err)
 				}
-				out := stalling.GentStallingInfo{}
+				out := occupations.GentStallingInfo{}
 				out.Time = in.Time
 				out.Facilityname = in.Facilityname
 				out.Id = in.Id

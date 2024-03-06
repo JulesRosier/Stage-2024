@@ -12,8 +12,8 @@ import (
 
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
-	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
+	"stage2024/pkg/protogen/occupations"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
@@ -58,7 +58,7 @@ func main() {
 	rcl, err := sr.NewClient(sr.URLs(*registry))
 	h.MaybeDieErr(err)
 
-	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_donkey_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_donkey_proto.Path()))
 	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
@@ -73,13 +73,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&bikes.DonkeyLocation{},
+		&occupations.DonkeyLocation{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*bikes.DonkeyLocation))
+			return proto.Marshal(a.(*occupations.DonkeyLocation))
 		}),
 		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*bikes.DonkeyLocation))
+			return proto.Unmarshal(b, a.(*occupations.DonkeyLocation))
 		}),
 	)
 
@@ -88,14 +88,14 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		allItems := gentopendata.Fetch[*bikes.DonkeyLocation](url,
-			func(b []byte) *bikes.DonkeyLocation {
+		allItems := gentopendata.Fetch[*occupations.DonkeyLocation](url,
+			func(b []byte) *occupations.DonkeyLocation {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
 				if err != nil {
 					slog.Warn("Failed to unmarshal", "error", err)
 				}
-				out := bikes.DonkeyLocation{}
+				out := occupations.DonkeyLocation{}
 				out.StationId = in.Station_id
 				out.NumBikesAvailable = in.Num_bikes_available
 				out.NumDocksAvailable = in.Num_docks_available

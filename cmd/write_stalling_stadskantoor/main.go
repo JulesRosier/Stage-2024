@@ -10,7 +10,7 @@ import (
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
-	"stage2024/pkg/protogen/stalling"
+	"stage2024/pkg/protogen/occupations"
 	"sync"
 	"time"
 
@@ -57,7 +57,7 @@ func main() {
 	rcl, err := sr.NewClient(sr.URLs(*registry))
 	h.MaybeDieErr(err)
 
-	file, err := os.ReadFile(filepath.Join("./proto", stalling.File_stalling_stadskantoor_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_gentstalling_proto.Path()))
 	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
@@ -72,13 +72,13 @@ func main() {
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
-		&stalling.StallingInfo{},
+		&occupations.StallingInfo{},
 		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*stalling.StallingInfo))
+			return proto.Marshal(a.(*occupations.StallingInfo))
 		}),
 		sr.Index(0),
 		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*stalling.StallingInfo))
+			return proto.Unmarshal(b, a.(*occupations.StallingInfo))
 		}),
 	)
 
@@ -87,15 +87,15 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		allItems := gentopendata.Fetch[*stalling.StallingInfo](url,
-			func(b []byte) *stalling.StallingInfo {
+		allItems := gentopendata.Fetch[*occupations.StallingInfo](url,
+			func(b []byte) *occupations.StallingInfo {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
 				if err != nil {
 					slog.Warn("Failed to unmarshal", "error", err)
 					return nil
 				}
-				out := stalling.StallingInfo{}
+				out := occupations.StallingInfo{}
 				out.Name = in.Name
 				out.Parkingcapacity = int32(in.Parkingcapacity)
 				out.Vacantspaces = int32(in.Vacantspaces)
