@@ -25,13 +25,11 @@ const fetchdelay = time.Minute * 10
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 
 type ApiData struct {
-	Bike_id         string  `json:"bike_id"`
-	Lat             float32 `json:"lat"`
-	Lon             float32 `json:"lon"`
-	Is_reserved     int32   `json:"is_reserved"`
-	Is_disabled     int32   `json:"is_disabled"`
-	Vehicle_type_id string  `json:"vehicle_type"`
-	Rental_uris     string  `json:"rental_uris"`
+	Bike_id         string `json:"bike_id"`
+	Is_reserved     int32  `json:"is_reserved"`
+	Is_disabled     int32  `json:"is_disabled"`
+	Vehicle_type_id string `json:"vehicle_type"`
+	Rental_uris     string `json:"rental_uris"`
 	Geopoint        struct {
 		Lon float64 `json:"lon"`
 		Lat float64 `json:"lat"`
@@ -94,8 +92,6 @@ func main() {
 
 				out := bikes.BaqmeLocation{}
 				out.BikeId = in.Bike_id
-				out.Lat = in.Lat
-				out.Lon = in.Lon
 				out.IsReserved = in.Is_reserved
 				out.IsDisabled = in.Is_disabled
 				out.VehicleTypeId = in.Vehicle_type_id

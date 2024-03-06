@@ -4,11 +4,9 @@ import "common/location.proto";
 
 message BaqmeLocation {
   string bike_id = 1;
-  float lat = 2;
-  float lon = 3;
-  int32 is_reserved = 4;
-  int32 is_disabled = 5;
-  string vehicle_type_id = 6;
-  string rental_uris = 7;
-  common.Location location = 8;
+  int32 is_reserved = 2;
+  int32 is_disabled = 3;
+  string vehicle_type_id = 4;
+  string rental_uris = 5;
+  common.Location location = 6;
 }
