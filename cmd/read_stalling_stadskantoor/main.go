@@ -36,7 +36,6 @@ func main() {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
-	//stalling.File_stalling_stadskantoor_proto.Path()
 	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_stadskantoor_proto.Path()))
 	if err != nil {
 		slog.Error(err.Error())

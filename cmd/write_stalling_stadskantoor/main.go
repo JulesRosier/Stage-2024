@@ -57,7 +57,7 @@ func main() {
 	rcl, err := sr.NewClient(sr.URLs(*registry))
 	h.MaybeDieErr(err)
 
-	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_gentstalling_proto.Path()))
+	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_stadskantoor_proto.Path()))
 	h.MaybeDieErr(err)
 
 	sub := *topic + "-value"
