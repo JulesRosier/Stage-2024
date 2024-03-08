@@ -10,6 +10,6 @@ message BlueBikeOccupation {
   string name = 3;
   int32 bikes_in_use = 4;
   int32 bikes_available = 5;
-  common.Location location = 8;
-  string type = 9;
+  common.Location location = 6;
+  string type = 7;
 }
