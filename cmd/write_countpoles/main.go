@@ -25,14 +25,15 @@ import (
 const fetchdelay = time.Minute * 5
 
 type ApiData struct {
-	Code          string    `json:"code"`
-	Locatie       string    `json:"locatie"`
-	Datum         string    `json:"datum"`
-	Uur5minuten   string    `json:"uur5minuten"`
-	Ordening      time.Time `json:"ordening"`
-	Totaal        string    `json:"totaal"`
-	Tegenrichting string    `json:"tegenrichting"`
-	Hoofdrichting string    `json:"hoofdrichting"`
+	Code             string    `json:"code"`
+	Locatie          string    `json:"locatie"`
+	Datum            string    `json:"datum"`
+	Uur5minuten      string    `json:"uur5minuten"`
+	Ordening         time.Time `json:"ordening"`
+	Totaal           string    `json:"totaal"`
+	Tegenrichting    string    `json:"tegenrichting"`
+	Hoofdrichting    string    `json:"hoofdrichting"`
+	DatumUur5minuten time.Time `json:"datum5minuten"`
 }
 
 func toInt(s string) int {
@@ -119,6 +120,13 @@ func main() {
 					out.Totaal = int32(toInt(in.Totaal))
 					out.Tegenrichting = int32(toInt(in.Tegenrichting))
 					out.Hoofdrichting = int32(toInt(in.Hoofdrichting))
+
+					datum5min, err := time.Parse("2006-01-02 15:04:05", in.Datum+" "+in.Uur5minuten)
+					if err != nil {
+						slog.Warn("unable to parse date", "date", in.Datum+" "+in.Uur5minuten, "error", err.Error())
+						datum5min = time.Time{}
+					}
+					out.Datum5Minuten = timestamppb.New(datum5min)
 
 					return &out
 				},

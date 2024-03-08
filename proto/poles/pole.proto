@@ -12,4 +12,5 @@ message PoleData {
     int32 totaal = 6;
     int32 tegenrichting = 7;
     int32 hoofdrichting = 8;
+    google.protobuf.Timestamp datum5minuten = 9;
 }

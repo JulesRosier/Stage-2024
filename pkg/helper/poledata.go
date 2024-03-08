@@ -22,7 +22,8 @@ func GetPoleUrls() []string {
 	for _, paal := range []string{"coupure-links", "zuidparklaan", "visserij", "isabellakaai", "groendreef", "bataviabrug"} {
 		// date needs to be in 2023, code will stop working in 2025
 		date := time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
-		hour := time.Now().Round(5 * time.Minute).Format("3:04:05")
+		hour := time.Now().Round(5 * time.Minute).Format("15:04:05")
+		hour = strings.TrimLeft(hour, "0")
 
 		splitted := strings.Split(hour, ":")
 		var hourformatted string
