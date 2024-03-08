@@ -37,7 +37,10 @@ type ApiData struct {
 
 func toInt(s string) int {
 	i, err := strconv.Atoi(s)
-	h.MaybeDieErr(err)
+	if err != nil {
+		slog.Warn("unable to convert string to int", "string", s)
+		return -1
+	}
 	return i
 }
 
@@ -102,7 +105,7 @@ func main() {
 		urls := h.GetPoleUrls()
 
 		for _, url := range urls {
-			allItems := h.Fetch[*poles.PoleData](url,
+			allItems := h.Fetch(url,
 				func(b []byte) *poles.PoleData {
 					var in ApiData
 					json.Unmarshal(b, &in)
