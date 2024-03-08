@@ -86,7 +86,7 @@ func main() {
 	slog.Info("Producing records")
 
 	for {
-		allItems := gentopendata.Fetch[*occupations.GentStallingInfo](url,
+		allItems := gentopendata.Fetch(url,
 			func(b []byte) *occupations.GentStallingInfo {
 				var in ApiData
 				err := json.Unmarshal(b, &in)

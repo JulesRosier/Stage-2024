@@ -106,7 +106,7 @@ func main() {
 			wg.Done()
 		}()
 		for _, url := range urls {
-			allItems := gentopendata.Fetch[*occupations.BlueBikeOccupation](url,
+			allItems := gentopendata.Fetch(url,
 				func(b []byte) *occupations.BlueBikeOccupation {
 					var in ApiData
 					json.Unmarshal(b, &in)
