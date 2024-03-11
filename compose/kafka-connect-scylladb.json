@@ -1,0 +1,20 @@
+{
+  "connector.class": "io.connect.scylladb.ScyllaDbSinkConnector",
+  "name": "scylla-test",
+  "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "topics": "donkey-locations",
+  "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "header.converter": "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+  "scylladb.contact.points": "scylla-node1",
+  "scylladb.security.enabled": false,
+  "scylladb.ssl.enabled": false,
+  "scylladb.keyspace": "test",
+  "scylladb.keyspace.create.enabled": true,
+  "scylladb.deletes.enabled": true,
+  "scylladb.offset.storage.table.enable": true,
+  "scylladb.table.manage.enabled": true,
+  "errors.log.enable": false,
+  "errors.log.include.messages": false,
+  "errors.deadletterqueue.context.headers.enable": false,
+  "scylladb.ssl.hostname.verification": false
+}

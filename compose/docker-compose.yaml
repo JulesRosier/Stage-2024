@@ -70,7 +70,7 @@ services:
       - bash
       - -c
       - |
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.0.12
+        confluent-hub install --no-prompt scylladb/kafka-connect-scylladb:1.1.1
         /etc/confluent/docker/run
     volumes:
       - ./connect:/connectors
@@ -84,7 +84,7 @@ services:
       - redpanda_network
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
-    environment: 
+    environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
         kafka:
@@ -111,4 +111,11 @@ services:
     depends_on:
       - redpanda-0
       - connect
- 
+
+  scylla-node1:
+    container_name: scylla-node1
+    image: scylladb/scylla:5.2.16
+    restart: always
+    command: --smp 1 --memory 750M --overprovisioned 1 --api-address 0.0.0.0
+    networks:
+      - redpanda_network

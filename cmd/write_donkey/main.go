@@ -15,6 +15,7 @@ import (
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/occupations"
 
+	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/proto"
@@ -117,7 +118,7 @@ func main() {
 			wg.Add(1)
 			itemByte, err := serde.Encode(item)
 			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: "donkey-locations", Value: itemByte}
+			record := &kgo.Record{Topic: "donkey-locations", Value: itemByte, Key: []byte(uuid.New().String())}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				h.MaybeDie(err, "Produce error")

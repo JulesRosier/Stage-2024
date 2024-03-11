@@ -23,7 +23,8 @@ func main() {
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(*seed),
 		// kgo.ConsumeTopics("baqme-locations"),
-		kgo.ConsumeTopics(".*-locations$"),
+		// kgo.ConsumeTopics(".*-locations$"),
+		kgo.ConsumeTopics(".*-test$"),
 		kgo.ConsumeRegex(),
 		kgo.ConsumerGroup("Testing"),
 	)
@@ -50,6 +51,7 @@ func main() {
 			j, err := handleDecode(ctx, rcl, record.Value, c)
 			helper.MaybeDieErr(err)
 			fmt.Println(string(j))
+			// TODO: google timestamp import not working
 			// var bike bikes.BoltLocation
 			// err := serde.Decode(record.Value, &bike)
 			// if err != nil {

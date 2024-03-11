@@ -21,6 +21,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	// _ "google.golang.org/protobuf/types/timestamppb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // inMemFileName is an arbitrary name given to the in-memory proto file
