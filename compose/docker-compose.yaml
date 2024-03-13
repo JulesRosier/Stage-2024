@@ -84,7 +84,7 @@ services:
       - redpanda_network
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
-    environment: 
+    environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
         kafka:
@@ -111,4 +111,13 @@ services:
     depends_on:
       - redpanda-0
       - connect
- 
+
+  clickhouse-server:
+    container_name: clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - redpanda_network
+    image: clickhouse/clickhouse-server
