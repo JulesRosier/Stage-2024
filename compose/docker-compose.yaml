@@ -4,6 +4,8 @@ name: redpanda
 networks:
   redpanda_network:
     driver: bridge
+  ravendb_network:
+    driver: bridge
 volumes:
   redpanda-0: null
 services:
@@ -107,7 +109,7 @@ services:
             - name: local-connect-cluster
               url: http://connect:8083
     ports:
-      - 3000:8080
+      - 8080:8080
     depends_on:
       - redpanda-0
       - connect
