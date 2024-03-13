@@ -10,6 +10,8 @@ pass
 
 database should already exist
 
+[Available config options](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/create-mongodb-sink-connector/#create-a-mongodb-sink-connector)
+
 ```json
 {
   "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
