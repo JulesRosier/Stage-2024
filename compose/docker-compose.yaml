@@ -4,6 +4,9 @@ name: redpanda
 networks:
   redpanda_network:
     driver: bridge
+  mongo_network:
+    driver: bridge
+
 volumes:
   redpanda-0: null
 services:
@@ -70,7 +73,8 @@ services:
       - bash
       - -c
       - |
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.0.12
+        confluent-hub install --no-prompt mongodb/kafka-connect-mongodb:1.11.2
+        confluent-hub install --no-prompt confluentinc/kafka-connect-protobuf-converter:7.6.0
         /etc/confluent/docker/run
     volumes:
       - ./connect:/connectors
@@ -112,3 +116,24 @@ services:
       - redpanda-0
       - connect
  
+  mongo:
+    image: mongo
+    restart: always
+    networks:
+      - redpanda_network
+      - mongo_network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    networks:
+      - mongo_network
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
