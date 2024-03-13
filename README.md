@@ -12,6 +12,8 @@ database should already exist
 
 [Available config options](https://docs.redpanda.com/current/deploy/deployment-option/cloud/managed-connectors/create-mongodb-sink-connector/#create-a-mongodb-sink-connector)
 
+[Post precess config](https://www.mongodb.com/docs/kafka-connector/current/sink-connector/fundamentals/post-processors/)
+
 ```json
 {
   "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
@@ -26,6 +28,7 @@ database should already exist
   "value.converter": "io.confluent.connect.protobuf.ProtobufConverter",
   "value.converter.schema.registry.url": "http://redpanda-0:8081",
   "key.converter": "io.confluent.connect.protobuf.ProtobufConverter",
-  "key.converter.schema.registry.url": "http://redpanda-0:8081"
+  "key.converter.schema.registry.url": "http://redpanda-0:8081",
+  "post.processor.chain": "com.mongodb.kafka.connect.sink.processor.KafkaMetaAdder"
 }
 ```
