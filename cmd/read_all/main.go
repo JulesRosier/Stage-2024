@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	write "stage2024/cmd/ravendb_test" // Import the correct package path
 	"stage2024/pkg/helper"
 	"stage2024/pkg/serde"
 
@@ -31,6 +32,7 @@ func main() {
 		panic(err)
 	}
 	defer cl.Close()
+	defer write.Close()
 
 	slog.Info("Starting schema registry client", "host", *registry)
 	rcl, err := sr.NewClient(sr.URLs(*registry))
@@ -46,10 +48,13 @@ func main() {
 
 		iter := fetches.RecordIter()
 		for !iter.Done() {
+			fmt.Println()
 			record := iter.Next()
 			j, err := handleDecode(ctx, rcl, record.Value, c)
 			helper.MaybeDieErr(err)
 			fmt.Println(string(j))
+			write.WriteToRaven(string(j))
+
 			// var bike bikes.BoltLocation
 			// err := serde.Decode(record.Value, &bike)
 			// if err != nil {
@@ -60,6 +65,6 @@ func main() {
 			// 	"bike_id", bike.GetBikeId(),
 			// )
 		}
-
 	}
+
 }

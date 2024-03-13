@@ -136,7 +136,7 @@ func main() {
 				wg.Add(1)
 				itemByte, err := serde.Encode(item)
 				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: *topic, Value: itemByte}
+				record := &kgo.Record{Key: []byte(item.GetCode()), Topic: *topic, Value: itemByte}
 				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 					defer wg.Done()
 					h.MaybeDie(err, "Producing")
