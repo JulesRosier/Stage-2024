@@ -16,7 +16,7 @@ database should already exist
 {
   "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
   "name": "mongodb-sink-connector-test",
-  "topics.regex": "donkey-locations",
+  "topics.regex": "^(?!_).*",
   "database": "test",
   "connection.url": "mongodb://mongo:27017/",
   "connection.password": "example",
