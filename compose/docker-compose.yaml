@@ -114,17 +114,17 @@ services:
       - redpanda-0
       - connect
 
-  db:
+  postgres:
     image: postgres
-    container_name: local_pgdb
+    container_name: postgres
     restart: always
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: user-name
-      POSTGRES_PASSWORD: strong-password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     volumes:
-      - local_pgdata:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
