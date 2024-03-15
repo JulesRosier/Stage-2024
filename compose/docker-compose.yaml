@@ -4,6 +4,8 @@ name: redpanda
 networks:
   redpanda_network:
     driver: bridge
+  postgress_network:
+    driver: bridge
 volumes:
   redpanda-0: null
   local_pgdata:
@@ -125,6 +127,8 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - local_pgdata:/var/lib/postgresql/data
+    networks:
+      - postgress_network
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
@@ -136,3 +140,5 @@ services:
       PGADMIN_DEFAULT_PASSWORD: strong-password
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - postgress_network
