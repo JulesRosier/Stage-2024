@@ -4,6 +4,8 @@ name: redpanda
 networks:
   redpanda_network:
     driver: bridge
+  clickhouse_network:
+    driver: bridge
 volumes:
   redpanda-0: null
 services:
@@ -70,12 +72,14 @@ services:
       - bash
       - -c
       - |
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.0.12
+        confluent-hub install --no-prompt clickhouse/clickhouse-kafka-connect:v1.0.14
+        confluent-hub install --no-prompt confluentinc/kafka-connect-protobuf-converter:7.6.0
         /etc/confluent/docker/run
     volumes:
       - ./connect:/connectors
     networks:
       - redpanda_network
+      - clickhouse_network
 
   console:
     container_name: redpanda-console
@@ -119,5 +123,12 @@ services:
         soft: 262144
         hard: 262144
     networks:
+      - clickhouse_network
       - redpanda_network
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8443
+      - CLICKHOUSE_USER=root
+      - CLICKHOUSE_PASSWORD=root
+      - CLICKHOUSE_DB=test
     image: clickhouse/clickhouse-server
