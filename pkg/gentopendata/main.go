@@ -41,7 +41,7 @@ func Fetch[T any](url string, f func([]byte) T) []T {
 }
 
 func request[T any](url string, offset int) (fetchData, error) {
-	slog.Info("Makking request", "offset", offset)
+	slog.Info("Making request", "offset", offset)
 	resp, err := http.Get(fmt.Sprintf("%s?limit=%d&offset=%d", url, maxRequestCount, offset))
 	var data fetchData
 	if err != nil {
