@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
+	"os/signal"
 	"stage2024/pkg/database"
-	"stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
-	"stage2024/pkg/serde"
+	"syscall"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/redpanda-data/console/backend/pkg/serde"
 )
 
 func main() {
@@ -22,10 +25,20 @@ func main() {
 func temp() {
 	q := database.GetQueries()
 	cl := kafka.GetClient()
-	rcl := kafka.GetRepoClient()
+	s := kafka.CreateSerde()
 
 	ctx := context.Background()
-	c := make(map[int]*serde.Serde)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-interrupt
+		fmt.Println("\nReceived an interrupt signal, exiting...")
+		os.Exit(0)
+	}()
+
+	slog.Info("Waiting for events...")
 	for {
 		fetches := cl.PollFetches(ctx)
 		if errs := fetches.Errors(); len(errs) > 0 {
@@ -35,14 +48,69 @@ func temp() {
 		iter := fetches.RecordIter()
 		for !iter.Done() {
 			record := iter.Next()
-			j, err := serde.HandleDecode(ctx, rcl, record.Value, c)
-			helper.MaybeDieErr(err)
-			//fmt.Println(string(j))
-			q.CreateEvent(ctx, database.CreateEventParams{
-				Data:      j,
-				TopicName: pgtype.Text{String: record.Topic, Valid: true},
+
+			sRecord := s.DeserializeRecord(
+				ctx,
+				record,
+				serde.DeserializationOptions{
+					KeyEncoding:        serde.PayloadEncodingUnspecified,
+					ValueEncoding:      serde.PayloadEncodingUnspecified,
+					IgnoreMaxSizeLimit: true,
+				},
+			)
+
+			if _, ok := sRecord.Value.DeserializedPayload.(map[string]any); !ok {
+				slog.Warn("Bad DeserializedPayload")
+			}
+
+			var err error
+			var vb []byte
+			if sRecord.Value.DeserializedPayload == nil {
+				vb = nil
+			} else {
+				vb, err = json.Marshal(sRecord.Value.DeserializedPayload)
+				if err != nil {
+					slog.Warn("Failed to marshal record value to bjson", "err", err)
+					continue
+				}
+			}
+
+			var hb []byte
+			if len(record.Headers) == 0 {
+				hb = nil
+			} else {
+				hb, err = json.Marshal(record.Headers)
+				if err != nil {
+					slog.Warn("Failed to marshal record headers to bjson", "err", err)
+					continue
+				}
+			}
+
+			var kb []byte
+			if sRecord.Key.DeserializedPayload == nil {
+				kb = nil
+			} else {
+				kb, err = json.Marshal(sRecord.Key.DeserializedPayload)
+				if err != nil {
+					slog.Warn("Failed to marshal record key to bjson", "err", err)
+					continue
+				}
+			}
+
+			e, err := q.CreateEvent(ctx, database.CreateEventParams{
+				EventTimestamp: pgtype.Timestamp{Time: record.Timestamp, Valid: true},
+				TopicName:      record.Topic,
+				TopicOffset:    record.Offset,
+				TopicPartition: record.Partition,
+				EventHeaders:   hb,
+				EventKey:       kb,
+				EventValue:     vb,
 			})
-			slog.Info("inserted record", "topic", record.Topic)
+			if err != nil {
+				slog.Warn("Failed to write event to database", "err", err, "topic", record.Topic)
+				continue
+			}
+			slog.Info("Event saved", "id", e.ID, "topic", e.TopicName)
 		}
 
 	}
