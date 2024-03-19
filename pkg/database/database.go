@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"stage2024/pkg/helper"
 
@@ -27,6 +28,8 @@ func Init() *Queries {
 	DbDatabase := os.Getenv("DB_DATABASE")
 	DbHost := os.Getenv("DB_HOST")
 	DbPort := os.Getenv("DB_PORT")
+
+	slog.Info("Starting database", "host", DbHost, "database", DbDatabase)
 
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
