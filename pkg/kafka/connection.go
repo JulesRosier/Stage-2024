@@ -16,13 +16,11 @@ func GetClient() *kgo.Client {
 	slog.Info("Starting kafka client", "seedbrokers", seed)
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(seed),
-		kgo.ConsumeTopics(".*-locations$"),
 		kgo.ConsumeRegex(),
-		kgo.ConsumerGroup("Testing"),
+		kgo.ConsumeTopics("^[A-Za-z].*"),
+		// kgo.ConsumerGroup("Testing"),
 	)
-	if err != nil {
-		panic(err)
-	}
+	helper.MaybeDie(err, "error while starting kafka client")
 
 	return cl
 }
