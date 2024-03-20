@@ -4,20 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
-	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"google.golang.org/protobuf/proto"
 )
 
 // updates every 10 minutes
@@ -36,36 +32,15 @@ type ApiData struct {
 	}
 }
 
-func WriteBaqme(cl *kgo.Client, rcl *sr.Client) {
+const Topic = "baqme-locations"
+
+// Writes data to the topic
+func WriteBaqme(cl *kgo.Client, serde *sr.Serde) {
 	slog.Default()
-
-	topic := "baqme-locations"
-
-	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
-	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_baqme_proto.Path()))
-	h.MaybeDieErr(err)
-
-	// schema ophalen
-	ss := kafka.GetSchema(topic, rcl, file)
-
-	// Hier telkens anders, struct van gegenereerde file wordt hier gebruikt
-	var serde sr.Serde
-	serde.Register(
-		ss.ID,
-		&bikes.BaqmeLocation{},
-		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*bikes.BaqmeLocation))
-		}),
-		sr.Index(0),
-		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*bikes.BaqmeLocation))
-		}),
-	)
 
 	var wg sync.WaitGroup
 
 	for {
-		slog.Info("Producing to", "topic", topic)
 		allItems := gentopendata.Fetch(url,
 			func(b []byte) *bikes.BaqmeLocation {
 				var in ApiData
@@ -82,7 +57,6 @@ func WriteBaqme(cl *kgo.Client, rcl *sr.Client) {
 					Lon: in.Geopoint.Lon,
 					Lat: in.Geopoint.Lat,
 				}
-
 				return &out
 			},
 		)
@@ -92,15 +66,14 @@ func WriteBaqme(cl *kgo.Client, rcl *sr.Client) {
 			itemByte, err := serde.Encode(item)
 			h.MaybeDie(err, "Encoding")
 
-			record := &kgo.Record{Topic: topic, Value: itemByte}
+			record := &kgo.Record{Topic: Topic, Value: itemByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				h.MaybeDie(err, "Producing")
 			})
 		}
 		wg.Wait()
-		slog.Info("Uploaded all records")
-		slog.Info("Sleeping for", "duration", fetchdelay)
+		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
 		time.Sleep(fetchdelay)
 	}
 }

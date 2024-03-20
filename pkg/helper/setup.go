@@ -30,7 +30,7 @@ func ReferenceLocation(rcl *sr.Client) sr.SchemaReference {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
-	slog.Info("created or reusing schema",
+	slog.Debug("Created or reusing schema",
 		"subject", ssLocation.Subject,
 		"version", ssLocation.Version,
 		"id", ssLocation.ID,

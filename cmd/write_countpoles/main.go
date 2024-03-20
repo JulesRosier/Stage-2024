@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
-	"path/filepath"
 	h "stage2024/pkg/helper"
-	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/poles"
 	"strconv"
 	"sync"
@@ -15,7 +12,6 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -36,6 +32,8 @@ type ApiData struct {
 	DatumUur5minuten time.Time `json:"datum5minuten"`
 }
 
+const Topic = "countpoles"
+
 func toInt(s string) int {
 	i, err := strconv.Atoi(s)
 	if err != nil {
@@ -45,38 +43,15 @@ func toInt(s string) int {
 	return i
 }
 
-func WriteCountples(cl *kgo.Client, rcl *sr.Client) {
+func WriteCountples(cl *kgo.Client, serde *sr.Serde) {
 	slog.Default()
-
-	topic := "countpoles"
-
-	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
-	file, err := os.ReadFile(filepath.Join("./proto", poles.File_poles_pole_proto.Path()))
-	h.MaybeDieErr(err)
-
-	// schema ophalen
-	ss := kafka.GetSchema(topic, rcl, file)
-
-	var serde sr.Serde
-	serde.Register(
-		ss.ID,
-		&poles.PoleData{},
-		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*poles.PoleData))
-		}),
-		sr.Index(0),
-		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*poles.PoleData))
-		}),
-	)
 
 	var wg sync.WaitGroup
 
 	for {
-		slog.Info("Producing to", "topic", topic)
 		wg.Add(1)
 		go func() {
-			slog.Info("Sleeping", "time", fetchdelay)
+			slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
 			time.Sleep(fetchdelay)
 			wg.Done()
 		}()
@@ -87,7 +62,7 @@ func WriteCountples(cl *kgo.Client, rcl *sr.Client) {
 			allItems := h.Fetch(url,
 				func(b []byte) *poles.PoleData {
 					var in ApiData
-					json.Unmarshal(b, &in)
+					err := json.Unmarshal(b, &in)
 					h.MaybeDieErr(err)
 
 					out := poles.PoleData{}
@@ -115,14 +90,13 @@ func WriteCountples(cl *kgo.Client, rcl *sr.Client) {
 				wg.Add(1)
 				itemByte, err := serde.Encode(item)
 				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: topic, Value: itemByte}
+				record := &kgo.Record{Topic: Topic, Value: itemByte}
 				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 					defer wg.Done()
 					h.MaybeDie(err, "Producing")
 				})
 			}
 		}
-		slog.Info("uploaded all records", "topic", topic)
 		wg.Wait()
 	}
 }

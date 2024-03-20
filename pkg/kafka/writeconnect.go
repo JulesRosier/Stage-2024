@@ -10,6 +10,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 )
 
+// Creates a new Kafka client
 func Connect() *kgo.Client {
 	seed := os.Getenv("SEED_BROKER")
 
@@ -27,6 +28,7 @@ func Connect() *kgo.Client {
 	return cl
 }
 
+// Creates a new schema registry client
 func ConnectSchemaRegistry() *sr.Client {
 	registry := os.Getenv("REGISTRY")
 
@@ -45,7 +47,7 @@ func GetSchema(topic string, rcl *sr.Client, file []byte) sr.SubjectSchema {
 		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
 	})
 	h.MaybeDieErr(err)
-	slog.Info("Created or reusing schema", "sub", sub)
+	slog.Info("Created or reusing schema", "subject", sub)
 
 	return ss
 }

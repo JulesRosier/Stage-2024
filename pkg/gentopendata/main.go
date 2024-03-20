@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	h "stage2024/pkg/helper"
 )
 
 const maxRequestCount = 100
@@ -27,21 +28,21 @@ func Fetch[T any](url string, f func([]byte) T) []T {
 			allItems = append(allItems, f(x))
 		}
 		if err != nil {
-			slog.Error("Error fetching data:", "error", err)
+			h.MaybeDie(err, "Error fetching data")
 			break
 		}
 		totalCount = data.TotalCount
 		offset += len(data.Results)
 	}
 
-	// slog.Info("Total expected items", "count", totalCount)
-	// slog.Info("Total items fetched", "count", len(allItems))
+	slog.Debug("Total expected items", "count", totalCount)
+	slog.Debug("Total items fetched", "count", len(allItems))
 
 	return allItems
 }
 
 func request[T any](url string, offset int) (fetchData, error) {
-	// slog.Info("Making request", "offset", offset)
+	slog.Debug("Making request", "offset", offset)
 	resp, err := http.Get(fmt.Sprintf("%s?limit=%d&offset=%d", url, maxRequestCount, offset))
 	var data fetchData
 	if err != nil {
@@ -59,7 +60,7 @@ func request[T any](url string, offset int) (fetchData, error) {
 		return data, err
 	}
 	// fmt.Println(data)
-	//slog.Info("Request result", "item_count", len(data.Results))
+	slog.Debug("Request result", "item_count", len(data.Results))
 
 	return data, nil
 }

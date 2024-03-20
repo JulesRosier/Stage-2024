@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
-	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
 	"sync"
@@ -16,7 +13,6 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"google.golang.org/protobuf/proto"
 )
 
 // updates every 5 minutes
@@ -37,35 +33,14 @@ type ApiData struct {
 	}
 }
 
-func WriteBolt(cl *kgo.Client, rcl *sr.Client) {
+const Topic = "bolt-locations"
+
+func WriteBolt(cl *kgo.Client, serde *sr.Serde) {
 	slog.Default()
-
-	topic := "bolt-locations"
-
-	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
-	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_bolt_proto.Path()))
-	h.MaybeDieErr(err)
-
-	// schema ophalen
-	ss := kafka.GetSchema(topic, rcl, file)
-
-	var serde sr.Serde
-	serde.Register(
-		ss.ID,
-		&bikes.BoltLocation{},
-		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*bikes.BoltLocation))
-		}),
-		sr.Index(0),
-		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*bikes.BoltLocation))
-		}),
-	)
 
 	var wg sync.WaitGroup
 
 	for {
-		slog.Info("Producing to", "topic", topic)
 		allBikes := gentopendata.Fetch(url,
 			func(b []byte) *bikes.BoltLocation {
 				var in ApiData
@@ -92,15 +67,14 @@ func WriteBolt(cl *kgo.Client, rcl *sr.Client) {
 			wg.Add(1)
 			bikeByte, err := serde.Encode(bike)
 			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: topic, Value: bikeByte}
+			record := &kgo.Record{Topic: Topic, Value: bikeByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				h.MaybeDie(err, "Producing error")
 			})
 		}
 		wg.Wait()
-		slog.Info("Uploaded all records", "topic", topic)
-		slog.Info("Sleeping", "time", fetchdelay)
+		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
 		time.Sleep(fetchdelay)
 	}
 }
