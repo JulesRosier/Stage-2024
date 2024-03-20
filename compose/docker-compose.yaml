@@ -4,8 +4,12 @@ name: redpanda
 networks:
   redpanda_network:
     driver: bridge
+  postgress_network:
+    driver: bridge
 volumes:
   redpanda-0: null
+  local_pgdata:
+  pgadmin-data:
 services:
   redpanda-0:
     command:
@@ -44,38 +48,6 @@ services:
       - 18082:18082
       - 19092:19092
       - 19644:9644
-  connect:
-    container_name: connect
-    image: confluentinc/cp-kafka-connect:7.6.0-2-ubi8
-    depends_on:
-      - redpanda-0
-    ports:
-      - "8083:8083"
-    environment:
-      CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components
-      CONNECT_BOOTSTRAP_SERVERS: "redpanda-0:9092"
-      CONNECT_GROUP_ID: "connect1"
-      CONNECT_CONFIG_STORAGE_TOPIC: "_connect.configs"
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_OFFSET_STORAGE_TOPIC: "_connect.offset"
-      CONNECT_STATUS_STORAGE_TOPIC: "_connect.status"
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_REST_ADVERTISED_HOST_NAME: connect:8083
-    # offset.storage.partitions=-1
-    # status.storage.partitions=-1
-    command:
-      - bash
-      - -c
-      - |
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.0.12
-        /etc/confluent/docker/run
-    volumes:
-      - ./connect:/connectors
-    networks:
-      - redpanda_network
 
   console:
     container_name: redpanda-console
@@ -84,7 +56,7 @@ services:
       - redpanda_network
     entrypoint: /bin/sh
     command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
-    environment: 
+    environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
         kafka:
@@ -101,14 +73,32 @@ services:
           adminApi:
             enabled: true
             urls: ["http://redpanda-0:9644"]
-        connect:
-          enabled: true
-          clusters:
-            - name: local-connect-cluster
-              url: http://connect:8083
     ports:
       - 8080:8080
     depends_on:
       - redpanda-0
-      - connect
- 
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+    networks:
+      - postgress_network
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: strong-password
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - postgress_network

@@ -1,9 +1,8 @@
-package main
+package writedonkey
 
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
+	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/occupations"
 
@@ -39,36 +39,17 @@ type ApiData struct {
 	Name string `json:"name"`
 }
 
-func main() {
+func WriteDonkey(cl *kgo.Client, rcl *sr.Client) {
 	slog.Default()
 
-	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
-	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "donkey-locations", "topic to produce to and consume from")
+	topic := "donkey-locations"
 
-	slog.Info("Starting kafka client...", "seedbroker", *seed)
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(*seed),
-		kgo.AllowAutoTopicCreation(),
-	)
-	h.MaybeDieErr(err)
-	defer cl.Close()
-
-	slog.Info("Starting schema registry client...", "host", *registry)
-	rcl, err := sr.NewClient(sr.URLs(*registry))
-	h.MaybeDieErr(err)
-
+	// Proto file wordt gelezen, dit moet telkens aangepast worden naar de juiste file
 	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_donkey_proto.Path()))
 	h.MaybeDieErr(err)
 
-	sub := *topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema:     string(file),
-		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
-	})
-	h.MaybeDieErr(err)
-	slog.Info("Created or reusing schema", "subject", sub, "version", ss.Version, "id", ss.ID)
+	// schema ophalen
+	ss := kafka.GetSchema(topic, rcl, file)
 
 	var serde sr.Serde
 	serde.Register(
@@ -85,9 +66,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	slog.Info("Producing records")
-
 	for {
+		slog.Info("Producing to", "topic", topic)
 		allItems := gentopendata.Fetch(url,
 			func(b []byte) *occupations.DonkeyLocation {
 				var in ApiData
@@ -117,15 +97,15 @@ func main() {
 			wg.Add(1)
 			itemByte, err := serde.Encode(item)
 			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: "donkey-locations", Value: itemByte}
+			record := &kgo.Record{Topic: topic, Value: itemByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				h.MaybeDie(err, "Produce error")
 			})
 		}
 		wg.Wait()
-		slog.Info("Uploaded all records")
-		slog.Info("Sleeping for", "duration", fetchdelay)
+		slog.Info("Uploaded all records", "topic", topic)
+		slog.Info("Sleeping", "time", fetchdelay)
 		time.Sleep(fetchdelay)
 	}
 }

@@ -1,13 +1,13 @@
-package main
+package writecountpoles
 
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
 	"os"
 	"path/filepath"
 	h "stage2024/pkg/helper"
+	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/poles"
 	"strconv"
 	"sync"
@@ -45,39 +45,17 @@ func toInt(s string) int {
 	return i
 }
 
-func main() {
+func WriteCountples(cl *kgo.Client, rcl *sr.Client) {
 	slog.Default()
 
-	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
-	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "countpoles", "topic to produce to and consume from")
+	topic := "countpoles"
 
-	slog.Info("Starting kafka client", "seedbrokers", *seed)
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(*seed),
-		kgo.AllowAutoTopicCreation(),
-	)
-	h.MaybeDieErr(err)
-	defer cl.Close()
-
-	slog.Info("Starting schema registry client", "host", *registry)
-	rcl, err := sr.NewClient(sr.URLs(*registry))
-	h.MaybeDieErr(err)
-
+	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
 	file, err := os.ReadFile(filepath.Join("./proto", poles.File_poles_pole_proto.Path()))
 	h.MaybeDieErr(err)
 
-	sub := *topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema: string(file),
-		Type:   sr.TypeProtobuf,
-	})
-	h.MaybeDieErr(err)
-	slog.Info("created or reusing schema",
-		"subject", ss.Subject,
-		"version", ss.Version,
-		"id", ss.ID,
-	)
+	// schema ophalen
+	ss := kafka.GetSchema(topic, rcl, file)
 
 	var serde sr.Serde
 	serde.Register(
@@ -94,8 +72,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	slog.Info("Producing records")
 	for {
+		slog.Info("Producing to", "topic", topic)
 		wg.Add(1)
 		go func() {
 			slog.Info("Sleeping", "time", fetchdelay)
@@ -110,6 +88,7 @@ func main() {
 				func(b []byte) *poles.PoleData {
 					var in ApiData
 					json.Unmarshal(b, &in)
+					h.MaybeDieErr(err)
 
 					out := poles.PoleData{}
 					out.Code = in.Code
@@ -136,16 +115,14 @@ func main() {
 				wg.Add(1)
 				itemByte, err := serde.Encode(item)
 				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: *topic, Value: itemByte}
+				record := &kgo.Record{Topic: topic, Value: itemByte}
 				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 					defer wg.Done()
 					h.MaybeDie(err, "Producing")
 				})
 			}
-			slog.Info("fetched data", "src", url)
 		}
-
+		slog.Info("uploaded all records", "topic", topic)
 		wg.Wait()
-		slog.Info("uploaded all records")
 	}
 }

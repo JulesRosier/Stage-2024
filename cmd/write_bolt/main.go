@@ -1,14 +1,14 @@
-package main
+package writebolt
 
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"stage2024/pkg/gentopendata"
-	"stage2024/pkg/helper"
+	h "stage2024/pkg/helper"
+	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
 	"sync"
@@ -37,44 +37,17 @@ type ApiData struct {
 	}
 }
 
-func main() {
+func WriteBolt(cl *kgo.Client, rcl *sr.Client) {
 	slog.Default()
 
-	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
-	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "bolt-test", "topic to produce to and consume from")
+	topic := "bolt-locations"
 
-	slog.Info("Starting kafka client", "seedbrokers", *seed)
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(*seed),
-		kgo.AllowAutoTopicCreation(),
-	)
-	helper.MaybeDie(err, "Failed to start kafka client")
-	defer cl.Close()
-
-	slog.Info("Starting schema registry client", "host", *registry)
-
-	rcl, err := sr.NewClient(sr.URLs(*registry))
-	helper.MaybeDieErr(err)
-
-	sub := *topic + "-value"
+	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
 	file, err := os.ReadFile(filepath.Join("./proto", bikes.File_bikes_bolt_proto.Path()))
-	helper.MaybeDieErr(err)
+	h.MaybeDieErr(err)
 
-	ss, err := rcl.CreateSchema(context.Background(), sub,
-		sr.Schema{
-			Schema: string(file),
-			Type:   sr.TypeProtobuf,
-			References: []sr.SchemaReference{
-				helper.ReferenceLocation(rcl),
-			},
-		})
-	helper.MaybeDieErr(err)
-	slog.Info("created or reusing schema",
-		"subject", ss.Subject,
-		"version", ss.Version,
-		"id", ss.ID,
-	)
+	// schema ophalen
+	ss := kafka.GetSchema(topic, rcl, file)
 
 	var serde sr.Serde
 	serde.Register(
@@ -91,16 +64,13 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	slog.Info("Producing records")
 	for {
+		slog.Info("Producing to", "topic", topic)
 		allBikes := gentopendata.Fetch(url,
 			func(b []byte) *bikes.BoltLocation {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
-				if err != nil {
-					slog.Warn(err.Error())
-					return nil
-				}
+				h.MaybeDieErr(err)
 
 				out := bikes.BoltLocation{}
 				out.BikeId = in.BikeId
@@ -121,24 +91,15 @@ func main() {
 		for _, bike := range allBikes {
 			wg.Add(1)
 			bikeByte, err := serde.Encode(bike)
-			if err != nil {
-				slog.Warn("Bike encoding", "error", err)
-				continue
-			}
-			record := &kgo.Record{Topic: "bolt-test", Value: bikeByte}
+			h.MaybeDie(err, "Encoding error")
+			record := &kgo.Record{Topic: topic, Value: bikeByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
-				if err != nil {
-					slog.Warn("record had a produce error",
-						"error", err,
-					)
-				}
-
+				h.MaybeDie(err, "Producing error")
 			})
 		}
-
 		wg.Wait()
-		slog.Info("uploaded all records")
+		slog.Info("Uploaded all records", "topic", topic)
 		slog.Info("Sleeping", "time", fetchdelay)
 		time.Sleep(fetchdelay)
 	}

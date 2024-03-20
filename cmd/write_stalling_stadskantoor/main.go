@@ -1,14 +1,14 @@
-package main
+package writestallingstadskantoor
 
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"stage2024/pkg/gentopendata"
 	h "stage2024/pkg/helper"
+	"stage2024/pkg/kafka"
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/occupations"
 	"sync"
@@ -38,37 +38,19 @@ type ApiData struct {
 	} `json:"locatie"`
 }
 
-func main() {
+func WriteStallingStadskantoor(cl *kgo.Client, rcl *sr.Client) {
 	slog.Default()
 
-	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
-	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "stalling-stadskantoor", "topic to produce to and consume from")
+	topic := "stalling-stadskantoor"
 
-	slog.Info("Starting kafka client...", "seedbroker", *seed)
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(*seed),
-		kgo.AllowAutoTopicCreation(),
-	)
-	h.MaybeDieErr(err)
-	defer cl.Close()
-
-	slog.Info("Starting schema registry client...", "host", *registry)
-	rcl, err := sr.NewClient(sr.URLs(*registry))
-	h.MaybeDieErr(err)
-
+	// Proto file wordt gelezen, dit moet dus ieder keer aangepast worden naar de juiste file
 	file, err := os.ReadFile(filepath.Join("./proto", occupations.File_occupations_stadskantoor_proto.Path()))
 	h.MaybeDieErr(err)
 
-	sub := *topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema:     string(file),
-		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
-	})
-	h.MaybeDieErr(err)
-	slog.Info("Created or reusing schema", "subject", sub, "version", ss.Version, "id", ss.ID)
+	// schema ophalen
+	ss := kafka.GetSchema(topic, rcl, file)
 
+	// Hier telkens anders, struct van gegenereerde file wordt hier gebruikt
 	var serde sr.Serde
 	serde.Register(
 		ss.ID,
@@ -84,9 +66,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	slog.Info("Producing records")
-
 	for {
+		slog.Info("Producing to", "topic", topic)
 		allItems := gentopendata.Fetch(url,
 			func(b []byte) *occupations.StallingInfo {
 				var in ApiData
@@ -119,7 +100,7 @@ func main() {
 			stallingByte, err := serde.Encode(item)
 			h.MaybeDie(err, "Encoding")
 
-			record := &kgo.Record{Topic: "stalling-stadskantoor", Value: stallingByte}
+			record := &kgo.Record{Topic: topic, Value: stallingByte}
 			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
 				defer wg.Done()
 				h.MaybeDie(err, "Produce error")
