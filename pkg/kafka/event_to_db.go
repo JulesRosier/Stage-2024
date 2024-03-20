@@ -89,7 +89,7 @@ func EventImporter() {
 				slog.Warn("Failed to write event to database", "err", err, "topic", record.Topic)
 				continue
 			}
-			slog.Debug("Event saved", "id", e.ID)
+			slog.Info("Event saved", "id", e.ID, "topic", e.TopicName)
 		}
 
 	}
