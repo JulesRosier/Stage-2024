@@ -9,10 +9,12 @@ import (
 	writebolt "stage2024/cmd/write_bolt"
 	writecountpoles "stage2024/cmd/write_countpoles"
 	writedonkey "stage2024/cmd/write_donkey"
+	donkeybikedropoff "stage2024/cmd/write_donkey_bikedropoff"
 	writestallinggent "stage2024/cmd/write_stalling_gent"
 	writestallingstadskantoor "stage2024/cmd/write_stalling_stadskantoor"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/protogen/bikes"
+	"stage2024/pkg/protogen/events"
 	"stage2024/pkg/protogen/occupations"
 	"stage2024/pkg/protogen/poles"
 	"time"
@@ -73,7 +75,16 @@ func CreateSerde() *serde.Service {
 
 // Returns serde with all the schemas registered
 func GetSerde(rcl *sr.Client) *sr.Serde {
-	topics := []string{writebaqme.Topic, writebluebike.Topic, writebolt.Topic, writecountpoles.Topic, writedonkey.Topic, writestallinggent.Topic, writestallingstadskantoor.Topic}
+	topics := []string{
+		writebaqme.Topic,
+		writebluebike.Topic,
+		writebolt.Topic,
+		writecountpoles.Topic,
+		writedonkey.Topic,
+		writestallinggent.Topic,
+		writestallingstadskantoor.Topic,
+		donkeybikedropoff.Topic,
+	}
 	filepaths := []string{
 		bikes.File_bikes_baqme_proto.Path(),
 		occupations.File_occupations_blue_bike_proto.Path(),
@@ -82,6 +93,7 @@ func GetSerde(rcl *sr.Client) *sr.Serde {
 		occupations.File_occupations_donkey_proto.Path(),
 		occupations.File_occupations_stallinggent_proto.Path(),
 		occupations.File_occupations_stallingstadskantoor_proto.Path(),
+		events.File_events_bike_dropoff_proto.Path(),
 	}
 	serde := &sr.Serde{}
 
@@ -94,28 +106,10 @@ func GetSerde(rcl *sr.Client) *sr.Serde {
 		// schema ophalen
 		ss := GetSchema(topic, rcl, file)
 
-		var messageProto any
-		switch topic {
-		case "baqme-locations":
-			messageProto = &bikes.BaqmeLocation{}
-		case "bluebike-locations":
-			messageProto = &occupations.BlueBikeOccupation{}
-		case "bolt-locations":
-			messageProto = &bikes.BoltLocation{}
-		case "countpoles":
-			messageProto = &poles.PoleData{}
-		case "donkey-locations":
-			messageProto = &occupations.DonkeyLocation{}
-		case "stalling-gent":
-			messageProto = &occupations.StallingGent{}
-		case "stalling-stadskantoor":
-			messageProto = &occupations.StallingStadskantoor{}
-		}
+		messageProto := h.GetMessageProto(topic)
 
 		serde = registerSerde(serde, ss, messageProto)
-
 	}
-
 	return serde
 }
 
