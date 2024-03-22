@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message bike_identification {
+    string id = 1; // uuid
+    string model = 2;
+}

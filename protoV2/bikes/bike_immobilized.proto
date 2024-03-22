@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "./bike_identification.proto"
+
+message station_capacity_decreased {
+    google.protobuf.Timestamp time_stamp = 1;
+    bike bike = 2;
+}
+
+message bike {
+    bike_identification bike = 1;
+    location location = 2;
+}

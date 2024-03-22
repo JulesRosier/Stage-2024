@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "common/location.proto";
+
+message bike_returned {
+    google.protobuf.Timestamp time_stamp = 1;
+    bike_identification bike = 2;
+    station_identification station = 3;
+    user_identification user = 4;
+}

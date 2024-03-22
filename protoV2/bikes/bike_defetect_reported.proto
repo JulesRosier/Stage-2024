@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "./bike_identification.proto"
+import "../users/user_identification.proto"
+
+message bike_defect_reported {
+    google.protobuf.Timestamp time_stamp = 1;
+    bike bike = 2;
+    user_identification user = 3;
+    string reported_defect = 4;
+}
+
+message bike {
+    bike_identification bike = 1;
+    location location = 2;
+    bool is_electric = 3;
+    bool is_immobilized = 4;
+}
