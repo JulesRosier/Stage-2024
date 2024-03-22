@@ -1,12 +1,9 @@
-package main
+package writedonkeybikedropoff
 
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -18,7 +15,6 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -41,53 +37,12 @@ type ApiData struct {
 	Name string `json:"name"`
 }
 
-func main() {
+const Topic = "bike.droppedoff"
+
+func DonkeyBikeDropOff(cl *kgo.Client, serde *sr.Serde) {
 	slog.Default()
 
-	seed := flag.String("seedbroker", "localhost:19092", "brokers port to talk to")
-	registry := flag.String("registry", "localhost:18081", "schema registry port to talk to")
-	topic := flag.String("topic", "bike.droppedoff", "topic to produce to and consume from")
-
-	slog.Info("Starting kafka client...", "seedbroker", *seed)
-	cl, err := kgo.NewClient(
-		kgo.SeedBrokers(*seed),
-		kgo.AllowAutoTopicCreation(),
-	)
-	h.MaybeDieErr(err)
-	defer cl.Close()
-
-	slog.Info("Starting schema registry client...", "host", *registry)
-	rcl, err := sr.NewClient(sr.URLs(*registry))
-	h.MaybeDieErr(err)
-
-	file, err := os.ReadFile(filepath.Join("./proto", events.File_events_bike_pickup_proto.Path()))
-	h.MaybeDieErr(err)
-
-	sub := *topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema:     string(file),
-		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
-	})
-	h.MaybeDieErr(err)
-	slog.Info("Created or reusing schema", "subject", sub, "version", ss.Version, "id", ss.ID)
-
-	var serde sr.Serde
-	serde.Register(
-		ss.ID,
-		&events.BikeDropOff{},
-		sr.EncodeFn(func(a any) ([]byte, error) {
-			return proto.Marshal(a.(*events.BikeDropOff))
-		}),
-		sr.Index(0),
-		sr.DecodeFn(func(b []byte, a any) error {
-			return proto.Unmarshal(b, a.(*events.BikeDropOff))
-		}),
-	)
-
 	var wg sync.WaitGroup
-
-	slog.Info("Producing records")
 
 	var prevItems []ApiData
 
@@ -96,9 +51,7 @@ func main() {
 			func(b []byte) ApiData {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
-				if err != nil {
-					slog.Warn("Failed to unmarshal", "error", err)
-				}
+				h.MaybeDie(err, "Failed to unmarshal")
 				return in
 			},
 		)
@@ -116,7 +69,7 @@ func main() {
 					unixTime = 0
 				}
 
-				e := events.BikeDropOff{
+				item := events.BikeDropOff{
 					Reported:  timestamppb.New(time.Unix(unixTime, 0)),
 					StationId: item.Station_id,
 					Location: &common.Location{
@@ -124,20 +77,13 @@ func main() {
 						Lat: item.Geopunt.Lat,
 					},
 					Company:        "donkey-republic",
-					Dif:            bikesDiv,
+					Diff:           bikesDiv,
 					DocksAvailable: item.Num_docks_available,
 					BikesAvailable: item.Num_bikes_available,
 				}
 				ctx := context.TODO()
 
-				wg.Add(1)
-				itemByte, err := serde.Encode(&e)
-				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: *topic, Value: itemByte}
-				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-					defer wg.Done()
-					h.MaybeDie(err, "Produce error")
-				})
+				h.Produce(serde, cl, &wg, &item, ctx, Topic)
 
 			}
 		}
@@ -145,8 +91,7 @@ func main() {
 		prevItems = allItems
 
 		wg.Wait()
-		slog.Info("Uploaded all records")
-		slog.Info("Sleeping for", "duration", fetchdelay)
+		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
 		time.Sleep(fetchdelay)
 	}
 }

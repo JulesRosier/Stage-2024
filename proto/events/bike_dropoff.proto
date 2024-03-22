@@ -9,7 +9,7 @@ message BikeDropOff {
   string station_id = 2;
   common.Location location = 3;
   string company = 4;
-  int32 dif = 5;
+  int32 diff = 5;
   int32 docks_available = 6;
   int32 bikes_available = 7;
 }
