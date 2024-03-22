@@ -63,7 +63,6 @@ func DonkeyBikeDropOff(cl *kgo.Client, serde *sr.Serde) {
 				if bikesDiv == 0 {
 					continue
 				}
-				// docksDiv := item.Num_docks_available - p.Num_docks_available
 				unixTime, err := strconv.ParseInt(item.Last_reported, 10, 64)
 				if err != nil {
 					unixTime = 0
@@ -83,6 +82,7 @@ func DonkeyBikeDropOff(cl *kgo.Client, serde *sr.Serde) {
 				}
 				ctx := context.TODO()
 
+				wg.Add(1)
 				h.Produce(serde, cl, &wg, &item, ctx, Topic)
 
 			}

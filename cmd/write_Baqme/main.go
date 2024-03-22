@@ -41,6 +41,12 @@ func WriteBaqme(cl *kgo.Client, serde *sr.Serde) {
 	var wg sync.WaitGroup
 
 	for {
+		wg.Add(1)
+		go func() {
+			slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
+			time.Sleep(fetchdelay)
+			wg.Done()
+		}()
 		allItems := gentopendata.Fetch(url,
 			func(b []byte) *bikes.BaqmeLocation {
 				var in ApiData
@@ -66,7 +72,5 @@ func WriteBaqme(cl *kgo.Client, serde *sr.Serde) {
 			h.Produce(serde, cl, &wg, item, ctx, Topic)
 		}
 		wg.Wait()
-		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
-		time.Sleep(fetchdelay)
 	}
 }
