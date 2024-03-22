@@ -36,7 +36,7 @@ func Init() *Queries {
 
 	db, err := pgx.Connect(ctx, connStr)
 	if err != nil {
-		helper.DieMsg("Database err", err)
+		helper.DieMsg(err, "Database connection error")
 	}
 
 	// create tables
