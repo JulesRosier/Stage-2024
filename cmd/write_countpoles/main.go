@@ -37,7 +37,7 @@ const Topic = "countpoles"
 func toInt(s string) int {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		slog.Warn("unable to convert string to int", "string", s)
+		h.DieMsg(err, "unable to convert string to int")
 		return -1
 	}
 	return i
@@ -88,13 +88,7 @@ func WriteCountples(cl *kgo.Client, serde *sr.Serde) {
 			ctx := context.Background()
 			for _, item := range allItems {
 				wg.Add(1)
-				itemByte, err := serde.Encode(item)
-				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: Topic, Value: itemByte}
-				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-					defer wg.Done()
-					h.MaybeDie(err, "Producing")
-				})
+				h.Produce(serde, cl, &wg, item, ctx, Topic)
 			}
 		}
 		wg.Wait()

@@ -47,9 +47,7 @@ func WriteDonkey(cl *kgo.Client, serde *sr.Serde) {
 			func(b []byte) *occupations.DonkeyLocation {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
-				if err != nil {
-					slog.Warn("Failed to unmarshal", "error", err)
-				}
+				h.MaybeDie(err, "Failed to unmarshal")
 				out := occupations.DonkeyLocation{}
 				out.StationId = in.Station_id
 				out.NumBikesAvailable = in.Num_bikes_available
@@ -70,13 +68,7 @@ func WriteDonkey(cl *kgo.Client, serde *sr.Serde) {
 		ctx := context.Background()
 		for _, item := range allItems {
 			wg.Add(1)
-			itemByte, err := serde.Encode(item)
-			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: Topic, Value: itemByte}
-			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-				defer wg.Done()
-				h.MaybeDie(err, "Produce error")
-			})
+			h.Produce(serde, cl, &wg, item, ctx, Topic)
 		}
 		wg.Wait()
 		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)

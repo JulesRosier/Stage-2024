@@ -24,7 +24,7 @@ type ApiData struct {
 	Bike_id         string `json:"bike_id"`
 	Is_reserved     int32  `json:"is_reserved"`
 	Is_disabled     int32  `json:"is_disabled"`
-	Vehicle_type_id string `json:"vehicle_type"`
+	Vehicle_type_id string `json:"vehicle_type_id"`
 	Rental_uris     string `json:"rental_uris"`
 	Geopoint        struct {
 		Lon float64 `json:"lon"`
@@ -63,14 +63,7 @@ func WriteBaqme(cl *kgo.Client, serde *sr.Serde) {
 		ctx := context.Background()
 		for _, item := range allItems {
 			wg.Add(1)
-			itemByte, err := serde.Encode(item)
-			h.MaybeDie(err, "Encoding")
-
-			record := &kgo.Record{Topic: Topic, Value: itemByte}
-			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-				defer wg.Done()
-				h.MaybeDie(err, "Producing")
-			})
+			h.Produce(serde, cl, &wg, item, ctx, Topic)
 		}
 		wg.Wait()
 		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)

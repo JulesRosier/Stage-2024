@@ -41,7 +41,7 @@ func WriteBolt(cl *kgo.Client, serde *sr.Serde) {
 	var wg sync.WaitGroup
 
 	for {
-		allBikes := gentopendata.Fetch(url,
+		allItems := gentopendata.Fetch(url,
 			func(b []byte) *bikes.BoltLocation {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
@@ -63,15 +63,9 @@ func WriteBolt(cl *kgo.Client, serde *sr.Serde) {
 			},
 		)
 		ctx := context.Background()
-		for _, bike := range allBikes {
+		for _, item := range allItems {
 			wg.Add(1)
-			bikeByte, err := serde.Encode(bike)
-			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: Topic, Value: bikeByte}
-			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-				defer wg.Done()
-				h.MaybeDie(err, "Producing error")
-			})
+			h.Produce(serde, cl, &wg, item, ctx, Topic)
 		}
 		wg.Wait()
 		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)

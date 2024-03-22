@@ -77,13 +77,7 @@ func WriteBluebike(cl *kgo.Client, serde *sr.Serde) {
 			ctx := context.Background()
 			for _, item := range allItems {
 				wg.Add(1)
-				itemByte, err := serde.Encode(item)
-				h.MaybeDie(err, "Encoding error")
-				record := &kgo.Record{Topic: Topic, Value: itemByte}
-				cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-					defer wg.Done()
-					h.MaybeDie(err, "Producing")
-				})
+				h.Produce(serde, cl, &wg, item, ctx, Topic)
 			}
 		}
 		wg.Wait()

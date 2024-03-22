@@ -27,7 +27,7 @@ type ApiData struct {
 	Freeplaces     int32  `json:"freeplaces"`
 	Occupiedplaces int32  `json:"occupiedplaces"`
 	Bezetting      int32  `json:"bezetting"`
-	Geopoint       struct {
+	Geo_point_2d   struct {
 		Lon float64 `json:"lon"`
 		Lat float64 `json:"lat"`
 	}
@@ -45,9 +45,8 @@ func WriteStallingGent(cl *kgo.Client, serde *sr.Serde) {
 			func(b []byte) *occupations.StallingGent {
 				var in ApiData
 				err := json.Unmarshal(b, &in)
-				if err != nil {
-					slog.Warn("Failed to unmarshal", "error", err)
-				}
+				h.MaybeDie(err, "Failed to unmarshal")
+
 				out := occupations.StallingGent{}
 				out.Time = in.Time
 				out.Facilityname = in.Facilityname
@@ -57,8 +56,8 @@ func WriteStallingGent(cl *kgo.Client, serde *sr.Serde) {
 				out.Occupiedplaces = int32(in.Occupiedplaces)
 				out.Bezetting = int32(in.Bezetting)
 				out.Location = &common.Location{
-					Lon: in.Geopoint.Lon,
-					Lat: in.Geopoint.Lat,
+					Lon: in.Geo_point_2d.Lon,
+					Lat: in.Geo_point_2d.Lat,
 				}
 
 				return &out
@@ -67,13 +66,15 @@ func WriteStallingGent(cl *kgo.Client, serde *sr.Serde) {
 		ctx := context.Background()
 		for _, item := range allItems {
 			wg.Add(1)
-			stallingByte, err := serde.Encode(item)
-			h.MaybeDie(err, "Encoding error")
-			record := &kgo.Record{Topic: Topic, Value: stallingByte}
-			cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
-				defer wg.Done()
-				h.MaybeDie(err, "Produce error")
-			})
+			h.Produce(serde, cl, &wg, item, ctx, Topic)
+
+			// stallingByte, err := serde.Encode(item)
+			// h.MaybeDie(err, "Encoding error")
+			// record := &kgo.Record{Topic: Topic, Value: stallingByte}
+			// cl.Produce(ctx, record, func(_ *kgo.Record, err error) {
+			// 	defer wg.Done()
+			// 	h.MaybeDie(err, "Produce error")
+			// })
 		}
 		wg.Wait()
 		slog.Info("Sleeping for", "duration", fetchdelay, "topic", Topic)
