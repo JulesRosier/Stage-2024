@@ -1,7 +1,11 @@
 package main
 
 import (
+	"log/slog"
+	"os"
+	"os/signal"
 	"stage2024/pkg/database"
+	"stage2024/pkg/scheduler"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"gorm.io/gorm"
@@ -15,6 +19,17 @@ func main() {
 	db := database.GetDb()
 
 	CreateUsers(db)
+
+	s := scheduler.NewScheduler()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	slog.Info("Received an interrupt signal, exiting...")
+
+	s.Stop()
+
+	slog.Info("Done, goodbye")
 }
 
 func CreateUsers(db *gorm.DB) {
