@@ -3,6 +3,7 @@ module stage2024
 go 1.22.0
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/bufbuild/protocompile v0.9.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
