@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"stage2024/pkg/database"
+	"stage2024/pkg/opendata"
 	"stage2024/pkg/scheduler"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"gorm.io/gorm"
@@ -20,7 +22,17 @@ func main() {
 
 	CreateUsers(db)
 
+	changesCh := make(chan string, 10)
+
 	s := scheduler.NewScheduler()
+
+	s.Schedule(time.Minute*5, func() { opendata.Bolt(db, changesCh) })
+
+	go func() {
+		for item := range changesCh {
+			slog.Info(item)
+		}
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

@@ -27,6 +27,7 @@ func (s Scheduler) Stop() {
 func (s Scheduler) Schedule(t time.Duration, f func()) {
 	s.wg.Add(1)
 	ticker := time.NewTicker(t)
+	go f()
 	go func() {
 		for {
 			select {
