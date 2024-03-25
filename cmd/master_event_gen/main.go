@@ -13,7 +13,6 @@ func main() {
 	database.Init()
 
 	db := database.GetDb()
-	db.Create(&database.Test{Code: "D42", Price: 100})
 
 	CreateUsers(db)
 }
@@ -30,9 +29,9 @@ func CreateUsers(db *gorm.DB) {
 
 func CreateRandomUser(db *gorm.DB) {
 	u := &database.User{
-		ID:          gofakeit.UUID(),
-		UserName:    gofakeit.Username(),
-		EmailAdress: gofakeit.Email(),
+		Id:           gofakeit.UUID(),
+		UserName:     gofakeit.Username(),
+		EmailAddress: gofakeit.Email(),
 	}
 	db.Create(u)
 }

@@ -4,15 +4,32 @@ import (
 	"gorm.io/gorm"
 )
 
-type Test struct {
+type Bike struct {
 	gorm.Model
-	Code  string
-	Price uint
+	Id            string `gorm:"primaryKey"`
+	BikeModel     string
+	IsElectric    string
+	Location      string
+	IsImmobilized bool
+	IsAbandoned   bool
+	IsAvalable    bool
+	IsInStorage   bool
+	IsReserved    bool
+	IsDefect      bool
 }
 
 type User struct {
 	gorm.Model
-	ID          string `gorm:"primaryKey"`
-	UserName    string
-	EmailAdress string
+	Id           string `gorm:"primaryKey"`
+	UserName     string
+	EmailAddress string
+}
+
+type Station struct {
+	gorm.Model
+	Id         string `gorm:"primaryKey"`
+	Location   string
+	Name       string
+	Occupation int32
+	IsActive   bool
 }

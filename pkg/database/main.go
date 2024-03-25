@@ -33,7 +33,7 @@ func Init() {
 	db = database
 
 	slog.Info("Migrating database")
-	err = db.AutoMigrate(&Test{}, &User{})
+	err = db.AutoMigrate(&User{}, &Bike{}, &Station{})
 	helper.MaybeDieErr(err)
 }
 
