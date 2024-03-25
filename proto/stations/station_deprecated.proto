@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "stations/station_identification.proto";
+
+message station_deprecated {
+    google.protobuf.Timestamp time_stamp = 1;
+    deprecated_station station = 2;
+}
+
+message deprecated_station {
+    station_identification station = 1;
+    bool is_active = 2;
+}

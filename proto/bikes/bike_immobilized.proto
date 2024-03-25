@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "bikes/bike_identification.proto";
+import "common/location.proto";
+
+message bike_immobilized {
+    google.protobuf.Timestamp time_stamp = 1;
+    location_bike bike = 2;
+}
+
+message location_bike {
+    bike_identification bike = 1;
+    location location = 2;
+}

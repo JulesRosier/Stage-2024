@@ -1,10 +1,11 @@
 syntax = "proto3";
 
-import "./station.proto"
+import "google/protobuf/timestamp.proto";
+import "stations/station_identification.proto";
 
 message station_capacity_decreased {
     google.protobuf.Timestamp time_stamp = 1;
-    Station station = 2;
+    station_identification station = 2;
     int32 amount_decreased = 3;
     int32 current_available_capacity = 4;
     int32 max_capacity = 5;

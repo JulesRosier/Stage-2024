@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "users/user_identification.proto";
+
+message user_registered {
+    google.protobuf.Timestamp time_stamp = 1;
+    user_identification user = 2;
+}

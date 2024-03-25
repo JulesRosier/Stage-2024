@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "bikes/bike_identification.proto";
+
+message bike_stored {
+    google.protobuf.Timestamp time_stamp = 1;
+    bike_identification bike = 2;
+}

@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-import "./bike_identification.proto"
-import "../stations/station.proto"
-import "../users/user_identification.proto"
+import "google/protobuf/timestamp.proto";
+import "bikes/bike_identification.proto";
+import "stations/station_identification.proto";
+import "users/user_identification.proto";
 
 message bike_reserved {
     google.protobuf.Timestamp time_stamp = 1;
@@ -12,6 +13,6 @@ message bike_reserved {
 }
 
 message bike {
-    bike_identification id;
+    bike_identification bike = 1;
     bool is_electric = 2;
 }

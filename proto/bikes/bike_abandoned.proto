@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "bikes/bike_identification.proto";
+import "users/user_identification.proto";
+import "common/location.proto";
+import "google/protobuf/timestamp.proto";
+
+message bike_abandoned {
+    google.protobuf.Timestamp time_stamp = 1;
+    abandoned_bike bike = 2;
+    user_identification user = 3;
+}
+
+message abandoned_bike {
+    bike_identification bike = 1;
+    location location = 2;
+}

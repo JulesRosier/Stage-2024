@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "stations/station_identification.proto";
+
+message station_created {
+    google.protobuf.Timestamp time_stamp = 1;
+    created_station station = 2;
+}
+
+message created_station {
+    station_identification station = 1;
+    bool is_active = 2;
+    int32 max_capacity = 3;
+}

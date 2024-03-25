@@ -1,9 +1,7 @@
 syntax = "proto3";
 
-import "google/protobuf/date.proto";
-
 message user_identification {
     string id = 1; // uuid
     string user_name = 2;
-    tring email_address = 3;
+    string email_address = 3;
 }

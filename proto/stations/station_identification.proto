@@ -4,6 +4,6 @@ import "common/location.proto";
 
 message station_identification {
     string id = 1; //uuid
-    Location location = 2;
+    location location = 2;
     string name = 3;
 }
