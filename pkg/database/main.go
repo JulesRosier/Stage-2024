@@ -1,31 +1,23 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"stage2024/pkg/helper"
 
-	"github.com/jackc/pgx/v5"
-
-	_ "embed"
-
 	_ "github.com/joho/godotenv/autoload"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var (
-	//go:embed schema.sql
-	ddl     string
-	queries *Queries
-)
+var db *gorm.DB
 
-func Init() *Queries {
-	ctx := context.Background()
+func Init() {
 
 	DbUser := os.Getenv("DB_USER")
 	DbPassword := os.Getenv("DB_PASSWORD")
-	DbDatabase := os.Getenv("DB_DATABASE")
+	DbDatabase := os.Getenv("DB_DATABASE_OLTP")
 	DbHost := os.Getenv("DB_HOST")
 	DbPort := os.Getenv("DB_PORT")
 
@@ -34,19 +26,16 @@ func Init() *Queries {
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 
-	db, err := pgx.Connect(ctx, connStr)
+	database, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
-		helper.DieMsg(err, "Database connection error")
+		helper.MaybeDieErr(err)
 	}
+	db = database
 
-	// create tables
-	if _, err := db.Exec(ctx, ddl); err != nil {
-		panic(err)
-	}
-	queries = New(db)
-	return queries
+	err = db.AutoMigrate(&Test{})
+	helper.MaybeDieErr(err)
 }
 
-func GetQueries() *Queries {
-	return queries
+func GetDb() *gorm.DB {
+	return db
 }
