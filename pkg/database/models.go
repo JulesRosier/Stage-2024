@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+
 	"gorm.io/gorm"
 )
 
@@ -8,14 +10,14 @@ type Bike struct {
 	gorm.Model
 	Id            string `gorm:"primaryKey"`
 	BikeModel     string
-	IsElectric    string
 	Location      string
-	IsImmobilized bool
-	IsAbandoned   bool
-	IsAvalable    bool
-	IsInStorage   bool
-	IsReserved    bool
-	IsDefect      bool
+	IsElectric    sql.NullBool
+	IsImmobilized sql.NullBool
+	IsAbandoned   sql.NullBool
+	IsAvailable   sql.NullBool
+	IsInStorage   sql.NullBool
+	IsReserved    sql.NullBool
+	IsDefect      sql.NullBool
 }
 
 type User struct {
@@ -31,5 +33,5 @@ type Station struct {
 	Location   string
 	Name       string
 	Occupation int32
-	IsActive   bool
+	IsActive   sql.NullBool
 }
