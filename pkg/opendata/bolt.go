@@ -7,15 +7,15 @@ import (
 	"log/slog"
 	"stage2024/pkg/database"
 	"stage2024/pkg/gentopendata"
-	h "stage2024/pkg/helper"
+	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/common"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
+const Model = "Bolt"
 
 type ApiData struct {
 	BikeId             string `json:"bike_id"`
@@ -31,59 +31,34 @@ type ApiData struct {
 	}
 }
 
-func Bolt(db *gorm.DB, channelCh chan string) {
-	slog.Info("Fetching Bolt data")
+func Bolt(db *gorm.DB, channelCh chan []string) {
+	slog.Info("Fetching data", "model", Model)
 
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Bike {
+			faker := gofakeit.New(42) // seed to get same random bool values each time
 			var in ApiData
 			err := json.Unmarshal(b, &in)
-			h.MaybeDieErr(err)
+			helper.MaybeDieErr(err)
 
 			out := &database.Bike{}
 			out.Id = in.BikeId
-			out.BikeModel = "Bolt"
-			out.IsElectric = sql.NullBool{Bool: gofakeit.Bool(), Valid: true} //random bool value
+			out.BikeModel = Model
+			out.IsElectric = sql.NullBool{Bool: faker.Bool(), Valid: true} //random bool value
 			out.Location = fmt.Sprintf("%v", &common.Location{
 				Latitude:  in.Loc.Lat,
 				Longitude: in.Loc.Lon,
 			})
 			out.IsImmobilized = sql.NullBool{Valid: false} //fake
 			out.IsAbandoned = sql.NullBool{Valid: false}   //fake
-			out.IsAvailable = sql.NullBool{Bool: in.IsDisabled != 0, Valid: true}
+			out.IsAvailable = sql.NullBool{Bool: in.IsDisabled == 0, Valid: true}
 			out.IsInStorage = sql.NullBool{Valid: false} //fake
 			out.IsReserved = sql.NullBool{Bool: in.IsReserved != 0, Valid: true}
 			out.IsDefect = sql.NullBool{Valid: false} //fake
 			return out
 		},
 	)
-	for _, record := range records {
+	database.UpdateRecords(db, channelCh, records)
 
-		oldrecord := &database.Bike{}
-		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
-
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&record)
-
-		if result.RowsAffected == 0 {
-			return
-		}
-
-		//TODO: check for changes and send to event script
-		// works using channel to send to event script
-		// maybe make a splice of changed columns and send all at once?
-		// or send enum with changed columns?
-		if oldrecord.IsAvailable.Bool != record.IsAvailable.Bool {
-			channelCh <- fmt.Sprintf("Bike %s IsAvailable changed", record.Id)
-		}
-		if oldrecord.IsReserved.Bool != record.IsReserved.Bool {
-			channelCh <- fmt.Sprintf("Bike %s IsReserved changed", record.Id)
-		}
-		if oldrecord.Location != record.Location {
-			channelCh <- fmt.Sprintf("Bike %s Location changed, Location: %v", record.Id, record.Location)
-		}
-
-	}
-	slog.Info("Done")
+	slog.Info("Data fetched and processed, waiting...", "model", Model)
 }

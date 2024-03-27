@@ -7,6 +7,7 @@ import (
 	"stage2024/pkg/database"
 	"stage2024/pkg/opendata"
 	"stage2024/pkg/scheduler"
+	"strings"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -22,7 +23,7 @@ func main() {
 
 	CreateUsers(db)
 
-	changesCh := make(chan string, 10)
+	changesCh := make(chan []string, 100)
 
 	s := scheduler.NewScheduler()
 
@@ -30,7 +31,7 @@ func main() {
 
 	go func() {
 		for item := range changesCh {
-			slog.Info(item)
+			slog.Info("[" + strings.Join(item, `, `) + `]`)
 		}
 	}()
 
@@ -41,7 +42,7 @@ func main() {
 
 	s.Stop()
 
-	slog.Info("Done, goodbye")
+	slog.Info("Exiting... Goodbye!🧌")
 }
 
 func CreateUsers(db *gorm.DB) {
