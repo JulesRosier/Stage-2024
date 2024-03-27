@@ -75,7 +75,7 @@ func main() {
 
 	s.Stop()
 
-	slog.Info("Exiting... Goodbye!🧌")
+	slog.Info("Exiting... Goodbye!")
 }
 
 func CreateUsers(db *gorm.DB, kc *kafka.Client) {

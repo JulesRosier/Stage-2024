@@ -10,7 +10,8 @@ type Bike struct {
 	gorm.Model
 	Id            string `gorm:"primaryKey"`
 	BikeModel     string
-	Location      string
+	Lat           float64
+	Lon           float64
 	IsElectric    sql.NullBool
 	IsImmobilized sql.NullBool
 	IsAbandoned   sql.NullBool
