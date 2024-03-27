@@ -7,9 +7,6 @@ import (
 	"path/filepath"
 
 	h "stage2024/pkg/helper"
-	"stage2024/pkg/protogen/bikes"
-	"stage2024/pkg/protogen/stations"
-	"stage2024/pkg/protogen/users"
 
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/proto"
@@ -18,50 +15,36 @@ import (
 
 const protoDir = "./proto"
 
-type topic struct {
-	name      string
-	protoFile protoreflect.FileDescriptor
-	pType     any
+type Topic struct {
+	Name      string
+	ProtoFile protoreflect.FileDescriptor
+	PType     any
 }
 
-func GetSerde(rcl *sr.Client) *sr.Serde {
-	topics := []topic{
-		{protoFile: users.File_users_user_registered_proto, pType: &users.UserRegistered{}},
-
-		{protoFile: bikes.File_bikes_bike_abandoned_proto, pType: &bikes.AbandonedBike{}},
-		{protoFile: bikes.File_bikes_bike_defetect_reported_proto, pType: &bikes.BikeDefectReported{}},
-		{protoFile: bikes.File_bikes_bike_brought_out_proto, pType: &bikes.BikeImmobilized{}},
-		{protoFile: bikes.File_bikes_bike_immobilized_proto, pType: &bikes.BikeImmobilized{}},
-		{protoFile: bikes.File_bikes_bike_picked_up_proto, pType: &bikes.BikePickedUp{}},
-		{protoFile: bikes.File_bikes_bike_reserved_proto, pType: &bikes.BikeReserved{}},
-		{protoFile: bikes.File_bikes_bike_returned_proto, pType: &bikes.BikeReturned{}},
-		{protoFile: bikes.File_bikes_bike_stored_proto, pType: &bikes.BikeStored{}},
-
-		{protoFile: stations.File_stations_station_capacity_decreased_proto, pType: &stations.StationCapacityDecreased{}},
-		{protoFile: stations.File_stations_station_capacity_exhausted_proto, pType: &stations.StationCapacityExhausted{}},
-		{protoFile: stations.File_stations_station_capacity_increased_proto, pType: &stations.StationCapacityIncreased{}},
-		{protoFile: stations.File_stations_station_created_proto, pType: &stations.StationCreated{}},
-		{protoFile: stations.File_stations_station_deprecated_proto, pType: &stations.StationDeprecated{}},
+func (t Topic) getName() string {
+	if t.Name == "" {
+		base := filepath.Base(t.ProtoFile.Path())
+		fileName := base[:len(base)-len(filepath.Ext(base))]
+		return fileName + "-value"
+	} else {
+		return t.Name
 	}
+
+}
+
+func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
 
 	serde := &sr.Serde{}
 	serde.SetDefaults()
 
 	for _, topic := range topics {
 
-		file, err := os.ReadFile(filepath.Join("./proto", topic.protoFile.Path()))
+		file, err := os.ReadFile(filepath.Join("./proto", topic.ProtoFile.Path()))
 		h.MaybeDieErr(err)
 
-		var subject string
-		if topic.name == "" {
-			base := filepath.Base(topic.protoFile.Path())
-			fileName := base[:len(base)-len(filepath.Ext(base))]
-			subject = fileName + "-value"
-		} else {
-			subject = topic.name
-		}
+		subject := topic.getName()
 
-		refs := getReferences(rcl, topic.protoFile)
+		refs := getReferences(rcl, topic.ProtoFile)
 
 		ss, err := rcl.CreateSchema(context.TODO(), subject, sr.Schema{
 			Schema:     string(file),
@@ -73,7 +56,7 @@ func GetSerde(rcl *sr.Client) *sr.Serde {
 
 		serde.Register(
 			ss.ID,
-			topic.pType,
+			topic.PType,
 			sr.EncodeFn(func(a any) ([]byte, error) {
 				return proto.Marshal(a.(proto.Message))
 			}),
