@@ -12,6 +12,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const url = "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
@@ -61,4 +62,45 @@ func Bolt(db *gorm.DB, channelCh chan []string) {
 	database.UpdateRecords(db, channelCh, records)
 
 	slog.Info("Data fetched and processed, waiting...", "model", Model)
+}
+
+//	type Idable interface {
+//		Id() string
+//	}
+type AB interface {
+	*database.Bike | *database.Station
+}
+
+type Puller[T AB] struct {
+	Url   string
+	Model string
+	// in        struct{}
+	Transform func([]byte) T
+}
+
+func (p Puller[T]) Pul(db *gorm.DB, channelCh chan []string) {
+	slog.Info("Fetching data", "model", p.Model)
+
+	records := gentopendata.Fetch(p.Url, p.Transform)
+	for _, record := range records {
+		oldrecord := &database.Bike{}
+		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
+
+		db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&record)
+
+		if result.RowsAffected == 0 {
+			continue
+		}
+
+		changedColumns := helper.ColumnChange(oldrecord, record)
+
+		if len(changedColumns) > 1 {
+			channelCh <- changedColumns
+		}
+	}
+
+	slog.Info("Data fetched and processed, waiting...", "model", p.Model)
+
 }
