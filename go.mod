@@ -3,9 +3,7 @@ module stage2024
 go 1.22.0
 
 require (
-	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/brianvoe/gofakeit/v7 v7.0.2
-	github.com/bufbuild/protocompile v0.9.0
 	github.com/joho/godotenv v1.5.1
 	github.com/twmb/franz-go v1.16.1
 	github.com/twmb/franz-go/pkg/sr v0.0.0-20240307025822-351e7fae879c
@@ -15,6 +13,7 @@ require (
 )
 
 require (
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jackc/pgx/v5 v5.5.5 // indirect
