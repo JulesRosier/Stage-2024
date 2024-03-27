@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	h "stage2024/pkg/helper"
@@ -37,17 +36,4 @@ func ConnectSchemaRegistry() *sr.Client {
 	h.MaybeDieErr(err)
 
 	return rcl
-}
-
-func GetSchema(topic string, rcl *sr.Client, file []byte) sr.SubjectSchema {
-	sub := topic + "-value"
-	ss, err := rcl.CreateSchema(context.Background(), sub, sr.Schema{
-		Schema:     string(file),
-		Type:       sr.TypeProtobuf,
-		References: []sr.SchemaReference{h.ReferenceLocation(rcl)},
-	})
-	h.MaybeDieErr(err)
-	slog.Info("Created or reusing schema", "subject", sub)
-
-	return ss
 }
