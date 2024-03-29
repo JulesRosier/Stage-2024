@@ -21,11 +21,13 @@ import (
 const maxUser = 100
 
 func main() {
+	fmt.Println("Starting...")
 	logLevel := h.GetLogLevel()
 	fmt.Printf("LOG_LEVEL = %s\n", logLevel)
-	slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
+	slog.SetDefault(logger)
 	database.Init()
 
 	db := database.GetDb()
@@ -33,7 +35,7 @@ func main() {
 	topics := []kafka.Topic{
 		{ProtoFile: users.File_users_user_registered_proto, PType: &users.UserRegistered{}},
 
-		{ProtoFile: bikes.File_bikes_bike_abandoned_proto, PType: &bikes.AbandonedBike{}},
+		{ProtoFile: bikes.File_bikes_bike_abandoned_proto, PType: &bikes.BikeAbandoned{}},
 		{ProtoFile: bikes.File_bikes_bike_defetect_reported_proto, PType: &bikes.BikeDefectReported{}},
 		{ProtoFile: bikes.File_bikes_bike_brought_out_proto, PType: &bikes.BikeBroughtOut{}},
 		{ProtoFile: bikes.File_bikes_bike_immobilized_proto, PType: &bikes.BikeImmobilized{}},

@@ -2,11 +2,12 @@ package kafka
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"reflect"
 	"stage2024/pkg/helper"
+	"strings"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -37,19 +38,19 @@ func NewClient(config Config) *Client {
 func (c Client) Produce(item any) error {
 	topic, ok := c.findTopicByType(item)
 	if !ok {
-		return errors.New("no topic found for type")
+		return fmt.Errorf("no topic found for type %s", reflect.TypeOf(item))
 	}
 	itemBytes, err := c.Serde.Encode(item)
 	if err != nil {
 		return err
 	}
-	record := &kgo.Record{Topic: topic, Value: itemBytes}
-	c.Kcl.Produce(context.TODO(), record, func(_ *kgo.Record, err error) {
+	record := &kgo.Record{Topic: topic, Value: itemBytes, Key: []byte(strings.SplitN(topic, "_", 2)[0])}
+	c.Kcl.Produce(context.Background(), record, func(r *kgo.Record, err error) {
 		if err != nil {
 			slog.Warn("Produce failed", "error", err)
 		}
+		slog.Debug("Produced event", "topic", topic, "offset", r.Offset)
 	})
-	slog.Debug("Created event", "topic", topic)
 	return nil
 }
 
@@ -57,7 +58,7 @@ func (c Client) findTopicByType(inputType any) (string, bool) {
 	// FIXME: could be contant time with hashmap
 	for _, topic := range c.Config.Topics {
 		if reflect.TypeOf(inputType) == reflect.TypeOf(topic.PType) {
-			return topic.getName(), true
+			return topic.getName(""), true
 		}
 	}
 	return "", false

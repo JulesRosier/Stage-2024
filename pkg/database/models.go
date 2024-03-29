@@ -2,6 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"stage2024/pkg/protogen/bikes"
+	"stage2024/pkg/protogen/stations"
+	"stage2024/pkg/protogen/users"
 
 	"gorm.io/gorm"
 )
@@ -35,4 +38,27 @@ type Station struct {
 	Name       string
 	Occupation int32
 	IsActive   sql.NullBool
+}
+
+func (b Bike) IntoId() *bikes.BikeIdentification {
+	return &bikes.BikeIdentification{
+		Id:    b.Id,
+		Model: b.BikeModel,
+	}
+}
+
+func (u User) IntoId() *users.UserIdentification {
+	return &users.UserIdentification{
+		Id:           u.Id,
+		UserName:     u.UserName,
+		EmailAddress: u.EmailAddress,
+	}
+}
+
+func (s Station) IntoId() *stations.StationIdentification {
+	return &stations.StationIdentification{
+		Id: s.Id,
+		// Location: s.Location,
+		Name: s.Name,
+	}
 }

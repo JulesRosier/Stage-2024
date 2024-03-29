@@ -21,11 +21,11 @@ type Topic struct {
 	PType     any
 }
 
-func (t Topic) getName() string {
+func (t Topic) getName(suffix string) string {
 	if t.Name == "" {
 		base := filepath.Base(t.ProtoFile.Path())
 		fileName := base[:len(base)-len(filepath.Ext(base))]
-		return fileName + "-value"
+		return fileName + suffix
 	} else {
 		return t.Name
 	}
@@ -42,7 +42,7 @@ func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
 		file, err := os.ReadFile(filepath.Join("./proto", topic.ProtoFile.Path()))
 		h.MaybeDieErr(err)
 
-		subject := topic.getName()
+		subject := topic.getName("-value")
 
 		refs := getReferences(rcl, topic.ProtoFile)
 
