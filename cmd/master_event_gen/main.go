@@ -9,11 +9,13 @@ import (
 	"stage2024/pkg/events"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
+	"stage2024/pkg/opendata"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/stations"
 	"stage2024/pkg/protogen/users"
 	"stage2024/pkg/scheduler"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -62,11 +64,14 @@ func main() {
 	s := scheduler.NewScheduler()
 
 	CreateUsers(db, kc)
-	// s.Schedule(time.Minute*5, func() { opendata.Bolt(db, changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.Bolt(db, changesCh) })
+	s.Schedule(time.Minute*10, func() { opendata.Baqme(db, changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike(db, changesCh) })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey(db, changesCh) })
 
 	go func() {
 		for item := range changesCh {
-			slog.Info("[" + strings.Join(item, `, `) + `]`)
+			fmt.Println("[" + strings.Join(item, `, `) + `]`)
 		}
 	}()
 
