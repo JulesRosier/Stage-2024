@@ -16,7 +16,7 @@ func ColumnChange(oldrecord any, record any) []string {
 	oldv := reflect.Indirect(reflect.ValueOf(oldrecord))
 	newv := reflect.Indirect(reflect.ValueOf(record))
 
-	changedColumns = append(changedColumns, newv.Field(1).String())
+	changedColumns = append(changedColumns, newv.Field(2).String())
 
 	for i := 1; i < oldv.NumField(); i++ {
 		if oldv.Field(i).Interface() != newv.Field(i).Interface() {
