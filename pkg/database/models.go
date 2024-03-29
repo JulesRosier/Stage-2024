@@ -12,6 +12,7 @@ import (
 type Bike struct {
 	gorm.Model
 	Id            string `gorm:"primaryKey"`
+	OpenDataId    string `gorm:"primaryKey"`
 	BikeModel     string
 	Lat           float64
 	Lon           float64
@@ -34,7 +35,9 @@ type User struct {
 type Station struct {
 	gorm.Model
 	Id         string `gorm:"primaryKey"`
-	Location   string
+	OpenDataId string `gorm:"primaryKey"`
+	Lat        float64
+	Lon        float64
 	Name       string
 	Occupation int32
 	IsActive   sql.NullBool
