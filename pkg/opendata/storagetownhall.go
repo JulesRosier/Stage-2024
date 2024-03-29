@@ -13,22 +13,24 @@ import (
 
 func StorageTownHall(channelCh chan []string) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
-	model := "StorageGhent"
+	model := "StorageTownHall"
 
 	slog.Info("Fetching data", "model", model)
 
 	in := struct {
-		Time           string `json:"time"`
-		Facilityname   string `json:"facilityname"`
-		Id             string `json:"id"`
-		Totalplaces    int32  `json:"totalplaces"`
-		Freeplaces     int32  `json:"freeplaces"`
-		Occupiedplaces int32  `json:"occupiedplaces"`
-		Bezetting      int32  `json:"bezetting"`
-		Geo_point_2d   struct {
+		Name            string  `json:"name"`
+		Parkingcapacity float32 `json:"parkingCapacity"`
+		Vacantspaces    float32 `json:"vacantSpaces"`
+		Naam            string  `json:"naam"`
+		Parking         string  `json:"parking"`
+		Occupation      int32   `json:"occupation"`
+		Infotekst       string  `json:"infotekst"`
+		Enginfotekst    string  `json:"enginfotekst"`
+		Frinfotekst     string  `json:"frinfotekst"`
+		Locatie         struct {
 			Lon float64 `json:"lon"`
 			Lat float64 `json:"lat"`
-		}
+		} `json:"locatie"`
 	}{}
 
 	records := gentopendata.Fetch(url,
@@ -38,12 +40,12 @@ func StorageTownHall(channelCh chan []string) {
 
 			out := &database.Station{}
 			out.Id = uuid.New().String()
-			out.OpenDataId = fmt.Sprint(model+"-", in.Id)
-			out.Lat = in.Geo_point_2d.Lat
-			out.Lon = in.Geo_point_2d.Lon
-			out.Name = in.Facilityname
-			out.MaxCapacity = in.Totalplaces
-			out.Occupation = in.Occupiedplaces
+			out.OpenDataId = fmt.Sprint(model+"-", in.Name)
+			out.Lat = in.Locatie.Lat
+			out.Lon = in.Locatie.Lon
+			out.Name = in.Name
+			out.MaxCapacity = int32(in.Parkingcapacity)
+			out.Occupation = int32(in.Parkingcapacity - in.Vacantspaces)
 
 			return out
 		},
