@@ -44,6 +44,7 @@ type Station struct {
 	IsActive    sql.NullBool
 }
 
+// Converts a Bike into a BikeIdentification proto event struct
 func (b Bike) IntoId() *bikes.BikeIdentification {
 	return &bikes.BikeIdentification{
 		Id:    b.Id,
@@ -51,6 +52,7 @@ func (b Bike) IntoId() *bikes.BikeIdentification {
 	}
 }
 
+// Converts a User into a UserIdentification proto event struct
 func (u User) IntoId() *users.UserIdentification {
 	return &users.UserIdentification{
 		Id:           u.Id,
@@ -59,6 +61,7 @@ func (u User) IntoId() *users.UserIdentification {
 	}
 }
 
+// Converts a Station into a StationIdentification proto event struct
 func (s Station) IntoId() *stations.StationIdentification {
 	return &stations.StationIdentification{
 		Id: s.Id,
