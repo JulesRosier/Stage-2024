@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-func BlueBike(db *gorm.DB, channelCh chan []string) {
+func BlueBike(channel chan []string) {
 	urls := []string{"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-dampoort/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-st-denijslaan/records",
@@ -57,7 +56,7 @@ func BlueBike(db *gorm.DB, channelCh chan []string) {
 				return out
 			},
 		)
-		database.UpdateStation(db, channelCh, records)
+		database.UpdateStation(channel, records)
 	}
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)

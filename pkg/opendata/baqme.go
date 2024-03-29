@@ -11,10 +11,9 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-func Baqme(db *gorm.DB, channelCh chan []string) {
+func Baqme(channel chan []string) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 	model := "Baqme"
 
@@ -54,7 +53,7 @@ func Baqme(db *gorm.DB, channelCh chan []string) {
 			return out
 		},
 	)
-	database.UpdateBike(db, channelCh, records)
+	database.UpdateBike(channel, records)
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

@@ -9,10 +9,9 @@ import (
 	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-func StorageTownHall(db *gorm.DB, channelCh chan []string) {
+func StorageTownHall(channelCh chan []string) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
 	model := "StorageGhent"
 
@@ -49,7 +48,7 @@ func StorageTownHall(db *gorm.DB, channelCh chan []string) {
 			return out
 		},
 	)
-	database.UpdateStation(db, channelCh, records)
+	database.UpdateStation(channelCh, records)
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

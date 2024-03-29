@@ -9,10 +9,9 @@ import (
 	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-func Donkey(db *gorm.DB, channelCh chan []string) {
+func Donkey(channel chan []string) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/donkey-republic-beschikbaarheid-deelfietsen-per-station/records"
 	model := "Donkey"
 
@@ -52,7 +51,7 @@ func Donkey(db *gorm.DB, channelCh chan []string) {
 			return out
 		},
 	)
-	database.UpdateStation(db, channelCh, records)
+	database.UpdateStation(channel, records)
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

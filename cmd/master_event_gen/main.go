@@ -64,12 +64,12 @@ func main() {
 	s := scheduler.NewScheduler()
 
 	CreateUsers(db, kc)
-	s.Schedule(time.Minute*5, func() { opendata.Bolt(db, changesCh) })
-	s.Schedule(time.Minute*10, func() { opendata.Baqme(db, changesCh) })
-	s.Schedule(time.Minute*5, func() { opendata.BlueBike(db, changesCh) })
-	s.Schedule(time.Minute*10, func() { opendata.Donkey(db, changesCh) })
-	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(db, changesCh) })
-	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(db, changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.Bolt(changesCh) })
+	s.Schedule(time.Minute*10, func() { opendata.Baqme(changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike(changesCh) })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey(changesCh) })
+	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(changesCh) })
 
 	go func() {
 		for item := range changesCh {
