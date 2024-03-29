@@ -30,6 +30,7 @@ func RunSequence(kc *kafka.Client) {
 	db.Order("random()").Find(&user)
 	userId := user.IntoId()
 
+	// TODO: only get bike with is not in use
 	bike := database.Bike{}
 	db.Order("random()").Find(&bike)
 	bikeId := bike.IntoId()
@@ -107,6 +108,8 @@ func RunSequence(kc *kafka.Client) {
 				IsElectric:    bike.IsElectric.Bool,
 				IsImmobilized: immobilized,
 			},
+			User:           userId,
+			ReportedDefect: gofakeit.LoremIpsumSentence(50),
 		})
 		h.MaybeDieErr(err)
 		if immobilized {
