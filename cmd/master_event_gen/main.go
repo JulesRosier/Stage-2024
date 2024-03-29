@@ -38,7 +38,7 @@ func main() {
 		{ProtoFile: users.File_users_user_registered_proto, PType: &users.UserRegistered{}},
 
 		{ProtoFile: bikes.File_bikes_bike_abandoned_proto, PType: &bikes.BikeAbandoned{}},
-		{ProtoFile: bikes.File_bikes_bike_defetect_reported_proto, PType: &bikes.BikeDefectReported{}},
+		{ProtoFile: bikes.File_bikes_bike_defect_reported_proto, PType: &bikes.BikeDefectReported{}},
 		{ProtoFile: bikes.File_bikes_bike_brought_out_proto, PType: &bikes.BikeBroughtOut{}},
 		{ProtoFile: bikes.File_bikes_bike_immobilized_proto, PType: &bikes.BikeImmobilized{}},
 		{ProtoFile: bikes.File_bikes_bike_picked_up_proto, PType: &bikes.BikePickedUp{}},
@@ -57,7 +57,11 @@ func main() {
 		Topics: topics,
 	})
 
-	events.RunSequence(kc)
+	i := 0
+	for i < 10 {
+		i++
+		go events.RunSequence(kc)
+	}
 
 	changesCh := make(chan []string, 100)
 
