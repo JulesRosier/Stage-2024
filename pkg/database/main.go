@@ -43,18 +43,45 @@ func GetDb() *gorm.DB {
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateRecords(db *gorm.DB, channelCh chan []string, records []*Bike) {
+func UpdateBike(db *gorm.DB, channelCh chan []string, records []*Bike) {
 	for _, record := range records {
 		oldrecord := &Bike{}
-		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
+		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
 
+		// if record does not exist, create it and exit
+		if result.RowsAffected == 0 {
+			db.Create(&record)
+			continue
+		}
+
+		record.Id = oldrecord.Id
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&record)
 
+		changedColumns := helper.ColumnChange(oldrecord, record)
+
+		if len(changedColumns) > 1 {
+			channelCh <- changedColumns
+		}
+	}
+}
+
+// updates records in the database and notifies changes through a channel.
+func UpdateStation(db *gorm.DB, channelCh chan []string, records []*Station) {
+	for _, record := range records {
+		oldrecord := &Station{}
+		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
+
 		if result.RowsAffected == 0 {
+			db.Create(&record)
 			continue
 		}
+
+		record.Id = oldrecord.Id
+		db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&record)
 
 		changedColumns := helper.ColumnChange(oldrecord, record)
 
