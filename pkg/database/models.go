@@ -12,7 +12,7 @@ import (
 type Bike struct {
 	gorm.Model
 	Id            string `gorm:"primaryKey"`
-	OpenDataId    string `gorm:"primaryKey"`
+	OpenDataId    string
 	BikeModel     string
 	Lat           float64
 	Lon           float64
@@ -34,13 +34,14 @@ type User struct {
 
 type Station struct {
 	gorm.Model
-	Id         string `gorm:"primaryKey"`
-	OpenDataId string `gorm:"primaryKey"`
-	Lat        float64
-	Lon        float64
-	Name       string
-	Occupation int32
-	IsActive   sql.NullBool
+	Id          string `gorm:"primaryKey"`
+	OpenDataId  string
+	Lat         float64
+	Lon         float64
+	Name        string
+	MaxCapacity int32
+	Occupation  int32
+	IsActive    sql.NullBool
 }
 
 func (b Bike) IntoId() *bikes.BikeIdentification {
