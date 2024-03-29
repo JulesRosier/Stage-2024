@@ -60,8 +60,9 @@ func UpdateBike(db *gorm.DB, channelCh chan []string, records []*Bike) {
 		}).Create(&record)
 
 		changedColumns := helper.ColumnChange(oldrecord, record)
+		changedColumns = append([]string{"bikes"}, changedColumns...)
 
-		if len(changedColumns) > 1 {
+		if len(changedColumns) > 2 {
 			channelCh <- changedColumns
 		}
 	}
@@ -84,8 +85,9 @@ func UpdateStation(db *gorm.DB, channelCh chan []string, records []*Station) {
 		}).Create(&record)
 
 		changedColumns := helper.ColumnChange(oldrecord, record)
+		changedColumns = append([]string{"stations"}, changedColumns...)
 
-		if len(changedColumns) > 1 {
+		if len(changedColumns) > 2 {
 			channelCh <- changedColumns
 		}
 	}
