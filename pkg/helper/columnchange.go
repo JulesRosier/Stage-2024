@@ -10,7 +10,7 @@ func ColumnChange(oldrecord any, record any) []string {
 	changedColumns := []string{}
 
 	if reflect.TypeOf(oldrecord) != reflect.TypeOf(record) {
-		DieMsg(errors.New("record struct types do not match"), "Record struct types do not match")
+		Die(errors.New("record struct types do not match"))
 	}
 
 	oldv := reflect.Indirect(reflect.ValueOf(oldrecord))
