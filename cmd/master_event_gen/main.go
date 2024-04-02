@@ -76,7 +76,7 @@ func main() {
 
 	go func() {
 		for change := range changesCh {
-			ChangeDetected(kc, change)
+			events.ChangeDetected(kc, change)
 		}
 	}()
 

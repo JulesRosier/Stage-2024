@@ -55,17 +55,17 @@ func Donkey(channel chan helper.Change) {
 	)
 	database.UpdateStation(channel, records)
 
-	// stationfull := &database.Station{
-	// 	Id:          "00000000-0000-0000-0000-000000000000",
-	// 	OpenDataId:  "station-full",
-	// 	Lat:         0,
-	// 	Lon:         0,
-	// 	Name:        "Station Full",
-	// 	MaxCapacity: 5,
-	// 	Occupation:  4,
-	// 	IsActive:    sql.NullBool{Bool: true, Valid: true},
-	// }
-	// database.UpdateStation(channel, []*database.Station{stationfull})
+	stationfull := &database.Station{
+		Id:          "00000000-test-test-test-000000000000",
+		OpenDataId:  "station-full",
+		Lat:         0,
+		Lon:         0,
+		Name:        "Station Full",
+		MaxCapacity: 5,
+		Occupation:  5,
+		IsActive:    sql.NullBool{Bool: false, Valid: true},
+	}
+	database.UpdateStation(channel, []*database.Station{stationfull})
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

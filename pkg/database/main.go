@@ -86,3 +86,15 @@ func UpdateStation(channel chan helper.Change, records []*Station) {
 		ColumnChange(oldrecord, record, channel)
 	}
 }
+
+func GetStationById(id string) Station {
+	var station Station
+	db.Where("id = ?", id).First(&station)
+	return station
+}
+
+func GetBikeById(id string) Bike {
+	var bike Bike
+	db.Where("id = ?", id).First(&bike)
+	return bike
+}
