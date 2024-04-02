@@ -57,5 +57,21 @@ func Bolt(channel chan helper.Change) {
 	)
 	database.UpdateBike(channel, records)
 
+	biketest := &database.Bike{
+		Id:            "00000000-test-test-test-000000000000",
+		OpenDataId:    "bike-test",
+		BikeModel:     "test",
+		Lat:           0,
+		Lon:           0,
+		IsElectric:    sql.NullBool{Bool: false, Valid: true},
+		IsImmobilized: sql.NullBool{Bool: false, Valid: true},
+		IsAbandoned:   sql.NullBool{Bool: false, Valid: true},
+		IsAvailable:   sql.NullBool{Bool: false, Valid: true},
+		IsInStorage:   sql.NullBool{Bool: false, Valid: true},
+		IsReserved:    sql.NullBool{Bool: false, Valid: true},
+		IsDefect:      sql.NullBool{Bool: false, Valid: true},
+	}
+	database.UpdateBike(channel, []*database.Bike{biketest})
+
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

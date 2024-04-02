@@ -27,7 +27,7 @@ func stationchange(change helper.Change) {
 	case "lat", "lon":
 		// kan denkik niet?
 	case "MaxCapacity":
-		// TODO
+		// TODO hier geen event van?, kan wel
 	case "Occupation":
 		occupationChange(station, change)
 	case "IsActive":
@@ -42,18 +42,21 @@ func bikechange(change helper.Change) {
 	case "Lat", "Lon":
 		locationchange(bike) // TODO
 	case "IsElectric":
+		slog.Info("Hoe kan een fiets opeens wel of niet elektrisch worden?")
 		// TODO waarschijnlijk niets, want is geen event, zal niet veranderen
 	case "IsImmobilized":
-		// TODO gen
+		// TODO generated
 	case "IsAbandoned":
-		// TODO gen
+		// TODO generated
 	case "IsAvailable":
-		availableChange(bike, change) //TODO
+		// TODO
 	case "IsInStorage":
-		// TODO gen
+		isInStorageChange(bike, change) // will never change on its own, generated
 	case "IsReserved":
-		reservedChange(bike, change) //TDOD
+		reservedChange(bike, change) //TODO
 	case "IsDefect":
-		// TODO gen
+		// TODO generated
 	}
 }
+
+//generated values for IsImmobilized, IsAbandoned, IsInStorage, IsDefect

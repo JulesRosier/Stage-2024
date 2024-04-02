@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
-	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stations"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -20,14 +19,7 @@ func activeChange(station database.Station, change helper.Change) {
 		err := kc.Produce(&stations.StationDeprecated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.DeprecatedStation{
-				Station: &stations.StationIdentification{
-					Id: station.Id,
-					Location: &common.Location{
-						Latitude:  station.Lat,
-						Longitude: station.Lon,
-					},
-					Name: station.Name,
-				},
+				Station:  station.IntoId(),
 				IsActive: station.IsActive.Bool,
 			},
 		})
@@ -40,14 +32,7 @@ func activeChange(station database.Station, change helper.Change) {
 		err := kc.Produce(&stations.StationCreated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.CreatedStation{
-				Station: &stations.StationIdentification{
-					Id: station.Id,
-					Location: &common.Location{
-						Latitude:  station.Lat,
-						Longitude: station.Lon,
-					},
-					Name: station.Name,
-				},
+				Station:     station.IntoId(),
 				IsActive:    station.IsActive.Bool,
 				MaxCapacity: station.MaxCapacity},
 		})
@@ -62,15 +47,8 @@ func occupationChange(station database.Station, change helper.Change) {
 		slog.Info("Station is full, sending event...", "station", station.OpenDataId)
 
 		err := kc.Produce(&stations.StationCapacityExhausted{
-			TimeStamp: timestamppb.Now(),
-			Station: &stations.StationIdentification{
-				Id: station.Id,
-				Location: &common.Location{
-					Latitude:  station.Lat,
-					Longitude: station.Lon,
-				},
-				Name: station.Name,
-			},
+			TimeStamp:   timestamppb.Now(),
+			Station:     station.IntoId(),
 			MaxCapacity: station.MaxCapacity,
 		})
 		helper.MaybeDieErr(err)
@@ -81,15 +59,8 @@ func occupationChange(station database.Station, change helper.Change) {
 		slog.Info("Station occupation increased, sending event...", "station", station.OpenDataId)
 
 		err := kc.Produce(&stations.StationCapacityIncreased{
-			TimeStamp: timestamppb.Now(),
-			Station: &stations.StationIdentification{
-				Id: station.Id,
-				Location: &common.Location{
-					Latitude:  station.Lat,
-					Longitude: station.Lon,
-				},
-				Name: station.Name,
-			},
+			TimeStamp:                timestamppb.Now(),
+			Station:                  station.IntoId(),
 			AmountIncreased:          helper.StringToInt(change.NewValue) - helper.StringToInt(change.OldValue),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
@@ -102,15 +73,8 @@ func occupationChange(station database.Station, change helper.Change) {
 		slog.Info("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
 		err := kc.Produce(&stations.StationCapacityDecreased{
-			TimeStamp: timestamppb.Now(),
-			Station: &stations.StationIdentification{
-				Id: station.Id,
-				Location: &common.Location{
-					Latitude:  station.Lat,
-					Longitude: station.Lon,
-				},
-				Name: station.Name,
-			},
+			TimeStamp:                timestamppb.Now(),
+			Station:                  station.IntoId(),
 			AmountDecreased:          (helper.StringToInt(change.OldValue) - helper.StringToInt(change.NewValue)),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,

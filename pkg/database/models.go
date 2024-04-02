@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"stage2024/pkg/protogen/bikes"
+	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stations"
 	"stage2024/pkg/protogen/users"
 
@@ -65,7 +66,10 @@ func (u User) IntoId() *users.UserIdentification {
 func (s Station) IntoId() *stations.StationIdentification {
 	return &stations.StationIdentification{
 		Id: s.Id,
-		// Location: s.Location,
+		Location: &common.Location{
+			Latitude:  s.Lat,
+			Longitude: s.Lon,
+		},
 		Name: s.Name,
 	}
 }

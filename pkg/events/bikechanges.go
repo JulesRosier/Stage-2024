@@ -1,6 +1,7 @@
 package events
 
 import (
+	"log/slog"
 	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/bikes"
@@ -8,8 +9,23 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func availableChange(bike database.Bike, change helper.Change) {
-	// TODO
+func isInStorageChange(bike database.Bike, change helper.Change) {
+	if change.NewValue == "false" {
+		slog.Info("Bike brought out, sending event...", "bike", bike.OpenDataId)
+		err := kc.Produce(&bikes.BikeBroughtOut{
+			TimeStamp: timestamppb.Now(),
+			Bike:      bike.IntoId(),
+		})
+		helper.MaybeDieErr(err)
+	}
+	if change.NewValue == "true" {
+		slog.Info("Bike stored, sending event...", "bike", bike.OpenDataId)
+		err := kc.Produce(&bikes.BikeStored{
+			TimeStamp: timestamppb.Now(),
+			Bike:      bike.IntoId(),
+		})
+		helper.MaybeDieErr(err)
+	}
 }
 
 func locationchange(bike database.Bike) {
