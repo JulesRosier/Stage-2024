@@ -34,7 +34,6 @@ func stationchange(change helper.Change) {
 		occupationchange(change.Id)
 	case "IsActive":
 		// TODO
-
 	}
 }
 
@@ -58,7 +57,6 @@ func bikechange(change helper.Change) {
 	case "IsDefect":
 		// TODO
 	}
-
 }
 
 func occupationchange(id string) {
@@ -84,5 +82,4 @@ func occupationchange(id string) {
 		})
 		helper.MaybeDieErr(err)
 	}
-
 }

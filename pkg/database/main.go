@@ -55,6 +55,7 @@ func UpdateBike(channel chan helper.Change, records []*Bike) {
 			continue
 		}
 
+		// if record exists, change uuid to old uuid and update record
 		record.Id = oldrecord.Id
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,

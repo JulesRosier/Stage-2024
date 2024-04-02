@@ -42,7 +42,6 @@ func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
 			slog.Debug("change", "", change)
 
 			channel <- change
-
 		}
 	}
 }

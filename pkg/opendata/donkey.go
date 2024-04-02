@@ -48,7 +48,7 @@ func Donkey(channel chan helper.Change) {
 			out.Name = in.Name
 			out.MaxCapacity = in.Num_bikes_available + in.Num_docks_available
 			out.Occupation = in.Num_bikes_available
-			out.IsActive = sql.NullBool{Bool: in.Is_renting != 0, Valid: true} //sql.NullBool{Bool: gofakeit.Bool(), Valid: true}
+			out.IsActive = sql.NullBool{Bool: in.Is_renting != 0, Valid: true}
 
 			return out
 		},
