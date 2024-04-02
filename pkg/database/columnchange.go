@@ -28,15 +28,17 @@ func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
 		if oldv.Field(i).Interface() != newv.Field(i).Interface() {
 			change.Column = newv.Type().Field(i).Name
 
-			if change.Column != "Lat" && change.Column != "Lon" {
-				change.OldValue = fmt.Sprintf("%v", oldv.Field(i))
-				change.NewValue = fmt.Sprintf("%v", newv.Field(i))
-			}
 			// Special case for geopoints
 			if change.Column == "Lat" || change.Column == "Lon" && !latchange {
 				change.OldValue = fmt.Sprintf("(%v, %v)", oldv.Field(i), oldv.Field(i+1))
 				change.NewValue = fmt.Sprintf("(%v, %v)", newv.Field(i), newv.Field(i+1))
 				latchange = true
+			} else if newv.Field(i).Type().String() == "sql.NullBool" { // Special case for sql.NullBool
+				change.OldValue = fmt.Sprintf("%v", oldv.Field(i).Field(0))
+				change.NewValue = fmt.Sprintf("%v", newv.Field(i).Field(0))
+			} else {
+				change.OldValue = fmt.Sprintf("%v", oldv.Field(i))
+				change.NewValue = fmt.Sprintf("%v", newv.Field(i))
 			}
 
 			slog.Debug("change", "", change)
