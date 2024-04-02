@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
-import "common/location.proto";
 import "bikes/bike_identification.proto";
 import "stations/station_identification.proto";
 import "users/user_identification.proto";
