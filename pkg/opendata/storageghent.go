@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func StorageGhent(channel chan []string) {
+func StorageGhent(channel chan helper.Change) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezettingen-fietsenstallingen-gent/records"
 	model := "StorageGhent"
 

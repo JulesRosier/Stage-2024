@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Bolt(channel chan []string) {
+func Bolt(channel chan helper.Change) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
 	model := "Bolt"
 

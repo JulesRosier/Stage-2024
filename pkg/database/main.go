@@ -43,7 +43,7 @@ func GetDb() *gorm.DB {
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateBike(channel chan []string, records []*Bike) {
+func UpdateBike(channel chan helper.Change, records []*Bike) {
 	db := GetDb()
 	for _, record := range records {
 		oldrecord := &Bike{}
@@ -60,18 +60,14 @@ func UpdateBike(channel chan []string, records []*Bike) {
 			UpdateAll: true,
 		}).Create(&record)
 
-		changedColumns := helper.ColumnChange(oldrecord, record)
-		changedColumns = append([]string{"bikes"}, changedColumns...)
-
-		if len(changedColumns) > 2 {
-			channel <- changedColumns
-		}
+		ColumnChange(oldrecord, record, channel)
 	}
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateStation(channel chan []string, records []*Station) {
+func UpdateStation(channel chan helper.Change, records []*Station) {
 	db := GetDb()
+
 	for _, record := range records {
 		oldrecord := &Station{}
 		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
@@ -86,11 +82,6 @@ func UpdateStation(channel chan []string, records []*Station) {
 			UpdateAll: true,
 		}).Create(&record)
 
-		changedColumns := helper.ColumnChange(oldrecord, record)
-		changedColumns = append([]string{"stations"}, changedColumns...)
-
-		if len(changedColumns) > 2 {
-			channel <- changedColumns
-		}
+		ColumnChange(oldrecord, record, channel)
 	}
 }

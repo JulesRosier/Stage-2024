@@ -1,6 +1,7 @@
 package opendata
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Donkey(channel chan []string) {
+func Donkey(channel chan helper.Change) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/donkey-republic-beschikbaarheid-deelfietsen-per-station/records"
 	model := "Donkey"
 
@@ -46,12 +47,25 @@ func Donkey(channel chan []string) {
 			out.Lon = in.Geopunt.Lon
 			out.Name = in.Name
 			out.MaxCapacity = in.Num_bikes_available + in.Num_docks_available
-			out.Occupation = in.Num_docks_available
+			out.Occupation = in.Num_bikes_available
+			out.IsActive = sql.NullBool{Bool: in.Is_renting != 0, Valid: true} //sql.NullBool{Bool: gofakeit.Bool(), Valid: true}
 
 			return out
 		},
 	)
 	database.UpdateStation(channel, records)
+
+	// stationfull := &database.Station{
+	// 	Id:          "00000000-0000-0000-0000-000000000000",
+	// 	OpenDataId:  "station-full",
+	// 	Lat:         0,
+	// 	Lon:         0,
+	// 	Name:        "Station Full",
+	// 	MaxCapacity: 5,
+	// 	Occupation:  4,
+	// 	IsActive:    sql.NullBool{Bool: true, Valid: true},
+	// }
+	// database.UpdateStation(channel, []*database.Station{stationfull})
 
 	slog.Info("Data fetched and processed, waiting...", "model", model)
 }

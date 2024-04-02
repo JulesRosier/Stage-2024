@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Baqme(channel chan []string) {
+func Baqme(channel chan helper.Change) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 	model := "Baqme"
 

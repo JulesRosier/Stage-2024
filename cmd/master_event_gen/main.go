@@ -14,7 +14,6 @@ import (
 	"stage2024/pkg/protogen/stations"
 	"stage2024/pkg/protogen/users"
 	"stage2024/pkg/scheduler"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -63,7 +62,7 @@ func main() {
 		go events.RunSequence(kc)
 	}
 
-	changesCh := make(chan []string, 100)
+	changesCh := make(chan h.Change, 100)
 
 	s := scheduler.NewScheduler()
 
@@ -76,8 +75,8 @@ func main() {
 	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(changesCh) })
 
 	go func() {
-		for item := range changesCh {
-			fmt.Println("[" + strings.Join(item, `, `) + `]`)
+		for change := range changesCh {
+			ChangeDetected(kc, change)
 		}
 	}()
 
