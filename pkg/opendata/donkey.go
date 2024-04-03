@@ -67,5 +67,5 @@ func Donkey(channel chan helper.Change) {
 	}
 	database.UpdateStation(channel, []*database.Station{stationfull})
 
-	slog.Info("Data fetched and processed, waiting...", "model", model)
+	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

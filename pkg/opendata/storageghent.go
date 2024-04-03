@@ -1,6 +1,7 @@
 package opendata
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -17,22 +18,23 @@ func StorageGhent(channel chan helper.Change) {
 
 	slog.Info("Fetching data", "model", model)
 
-	in := struct {
-		Time           string `json:"time"`
-		Facilityname   string `json:"facilityname"`
-		Id             string `json:"id"`
-		Totalplaces    int32  `json:"totalplaces"`
-		Freeplaces     int32  `json:"freeplaces"`
-		Occupiedplaces int32  `json:"occupiedplaces"`
-		Bezetting      int32  `json:"bezetting"`
-		Geo_point_2d   struct {
-			Lon float64 `json:"lon"`
-			Lat float64 `json:"lat"`
-		}
-	}{}
-
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Station {
+
+			in := struct {
+				Time           string `json:"time"`
+				Facilityname   string `json:"facilityname"`
+				Id             string `json:"id"`
+				Totalplaces    int32  `json:"totalplaces"`
+				Freeplaces     int32  `json:"freeplaces"`
+				Occupiedplaces int32  `json:"occupiedplaces"`
+				Bezetting      int32  `json:"bezetting"`
+				Geo_point_2d   struct {
+					Lon float64 `json:"lon"`
+					Lat float64 `json:"lat"`
+				}
+			}{}
+
 			err := json.Unmarshal(b, &in)
 			helper.MaybeDieErr(err)
 
@@ -44,11 +46,12 @@ func StorageGhent(channel chan helper.Change) {
 			out.Name = in.Facilityname
 			out.MaxCapacity = in.Totalplaces
 			out.Occupation = in.Occupiedplaces
+			out.IsActive = sql.NullBool{Bool: true, Valid: true}
 
 			return out
 		},
 	)
 	database.UpdateStation(channel, records)
 
-	slog.Info("Data fetched and processed, waiting...", "model", model)
+	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

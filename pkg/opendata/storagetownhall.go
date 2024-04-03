@@ -1,6 +1,7 @@
 package opendata
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -46,11 +47,12 @@ func StorageTownHall(channelCh chan helper.Change) {
 			out.Name = in.Name
 			out.MaxCapacity = int32(in.Parkingcapacity)
 			out.Occupation = int32(in.Parkingcapacity - in.Vacantspaces)
+			out.IsActive = sql.NullBool{Bool: true, Valid: true}
 
 			return out
 		},
 	)
 	database.UpdateStation(channelCh, records)
 
-	slog.Info("Data fetched and processed, waiting...", "model", model)
+	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

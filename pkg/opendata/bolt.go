@@ -35,7 +35,6 @@ func Bolt(channel chan helper.Change) {
 
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Bike {
-			faker := gofakeit.New(42) // seed to get same random bool values each time
 			err := json.Unmarshal(b, &in)
 			helper.MaybeDieErr(err)
 
@@ -43,15 +42,15 @@ func Bolt(channel chan helper.Change) {
 			out.OpenDataId = fmt.Sprint(model, "-", in.BikeId)
 			out.Id = uuid.New().String()
 			out.BikeModel = model
-			out.IsElectric = sql.NullBool{Bool: faker.Bool(), Valid: true} //random bool value
+			out.IsElectric = sql.NullBool{Bool: gofakeit.Bool(), Valid: true} //random bool value
 			out.Lat = in.Loc.Lat
 			out.Lon = in.Loc.Lon
-			out.IsImmobilized = sql.NullBool{Valid: false} //fake
-			out.IsAbandoned = sql.NullBool{Valid: false}   //fake
+			out.IsImmobilized = sql.NullBool{Bool: false, Valid: true} //fake
+			out.IsAbandoned = sql.NullBool{Bool: false, Valid: true}   //fake
 			out.IsAvailable = sql.NullBool{Bool: in.IsDisabled == 0, Valid: true}
-			out.IsInStorage = sql.NullBool{Valid: false} //fake
+			out.IsInStorage = sql.NullBool{Bool: false, Valid: true} //fake
 			out.IsReserved = sql.NullBool{Bool: in.IsReserved != 0, Valid: true}
-			out.IsDefect = sql.NullBool{Valid: false} //fake
+			out.IsDefect = sql.NullBool{Bool: false, Valid: true} //fake
 			return out
 		},
 	)
@@ -68,10 +67,10 @@ func Bolt(channel chan helper.Change) {
 		IsAbandoned:   sql.NullBool{Bool: false, Valid: true},
 		IsAvailable:   sql.NullBool{Bool: false, Valid: true},
 		IsInStorage:   sql.NullBool{Bool: false, Valid: true},
-		IsReserved:    sql.NullBool{Bool: false, Valid: true},
+		IsReserved:    sql.NullBool{Bool: true, Valid: true},
 		IsDefect:      sql.NullBool{Bool: false, Valid: true},
 	}
 	database.UpdateBike(channel, []*database.Bike{biketest})
 
-	slog.Info("Data fetched and processed, waiting...", "model", model)
+	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

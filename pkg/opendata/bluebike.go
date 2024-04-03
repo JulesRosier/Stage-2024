@@ -1,6 +1,7 @@
 package opendata
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -52,6 +53,7 @@ func BlueBike(channel chan helper.Change) {
 				out.Name = in.Name
 				out.MaxCapacity = in.BikesAvailable + in.BikesInUse
 				out.Occupation = in.BikesAvailable
+				out.IsActive = sql.NullBool{Bool: true, Valid: true}
 
 				return out
 			},
@@ -59,5 +61,5 @@ func BlueBike(channel chan helper.Change) {
 		database.UpdateStation(channel, records)
 	}
 
-	slog.Info("Data fetched and processed, waiting...", "model", model)
+	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }
