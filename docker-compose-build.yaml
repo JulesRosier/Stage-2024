@@ -1,0 +1,25 @@
+networks:
+  redpanda_network:
+    name: redpanda_network
+    driver: bridge
+    external: true
+  postgress_network:
+    name: postgress_network
+    driver: bridge
+    external: true
+
+services:
+  service:
+    build:
+      context: .
+      target: final
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      - DB_HOST=postgres
+      - SEED_BROKER=redpanda-0:9092
+      - REGISTRY=redpanda-0:8081
+    networks:
+      - redpanda_network
+      - postgress_network
