@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package common;
-
-message Location {
-  double lon = 1;
-  double lat = 2;
-}
