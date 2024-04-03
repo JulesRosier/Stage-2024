@@ -62,20 +62,20 @@ func main() {
 		go events.RunSequence(kc)
 	}
 
-	changesCh := make(chan h.Change, 100)
+	channel := make(chan h.Change, 100)
 
 	s := scheduler.NewScheduler()
 
 	CreateUsers(db, kc)
-	s.Schedule(time.Minute*5, func() { opendata.Bolt(changesCh) })
-	s.Schedule(time.Minute*10, func() { opendata.Baqme(changesCh) })
-	s.Schedule(time.Minute*5, func() { opendata.BlueBike(changesCh) })
-	s.Schedule(time.Minute*10, func() { opendata.Donkey(changesCh) })
-	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(changesCh) })
-	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(changesCh) })
+	s.Schedule(time.Minute*5, func() { opendata.Bolt(channel) })
+	s.Schedule(time.Minute*10, func() { opendata.Baqme(channel) })
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike(channel) })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey(channel) })
+	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(channel) })
+	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(channel) })
 
 	go func() {
-		for change := range changesCh {
+		for change := range channel {
 			events.ChangeDetected(kc, change)
 		}
 	}()
