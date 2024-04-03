@@ -10,37 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func activeChange(station database.Station, change helper.Change) {
-	//station deprecated
-	slog.Info("Active change detected", "station", station.OpenDataId, "newvalue", change.NewValue)
-	fmt.Println()
-	if change.NewValue == "false" {
-		slog.Info("Station deprecated, sending event...", "station", station.OpenDataId)
-		err := kc.Produce(&stations.StationDeprecated{
-			TimeStamp: timestamppb.Now(),
-			Station: &stations.DeprecatedStation{
-				Station:  station.IntoId(),
-				IsActive: station.IsActive.Bool,
-			},
-		})
-		helper.MaybeDieErr(err)
-	}
-
-	//station created/activated
-	if change.NewValue == "true" {
-		slog.Info("Station created, sending event...", "station", station.OpenDataId)
-		err := kc.Produce(&stations.StationCreated{
-			TimeStamp: timestamppb.Now(),
-			Station: &stations.CreatedStation{
-				Station:     station.IntoId(),
-				IsActive:    station.IsActive.Bool,
-				MaxCapacity: station.MaxCapacity},
-		})
-		helper.MaybeDieErr(err)
-
-	}
-}
-
 func occupationChange(station database.Station, change helper.Change) {
 	//station full
 	if station.Occupation == station.MaxCapacity {
@@ -81,4 +50,46 @@ func occupationChange(station database.Station, change helper.Change) {
 		})
 		helper.MaybeDieErr(err)
 	}
+}
+
+func activeChange(station database.Station, change helper.Change) {
+	//station deprecated
+	fmt.Println()
+	if change.NewValue == "false" {
+		slog.Info("Station deprecated, sending event...", "station", station.OpenDataId)
+		err := kc.Produce(&stations.StationDeprecated{
+			TimeStamp: timestamppb.Now(),
+			Station: &stations.DeprecatedStation{
+				Station:  station.IntoId(),
+				IsActive: station.IsActive.Bool,
+			},
+		})
+		helper.MaybeDieErr(err)
+	}
+
+	//station created/activated
+	if change.NewValue == "true" {
+		slog.Info("Station created, sending event...", "station", station.OpenDataId)
+		err := kc.Produce(&stations.StationCreated{
+			TimeStamp: timestamppb.Now(),
+			Station: &stations.CreatedStation{
+				Station:     station.IntoId(),
+				IsActive:    station.IsActive.Bool,
+				MaxCapacity: station.MaxCapacity},
+		})
+		helper.MaybeDieErr(err)
+
+	}
+}
+
+func created(station database.Station) {
+	slog.Info("Station created, sending event...", "station", station.OpenDataId)
+	err := kc.Produce(&stations.StationCreated{
+		TimeStamp: timestamppb.Now(),
+		Station: &stations.CreatedStation{
+			Station:     station.IntoId(),
+			IsActive:    station.IsActive.Bool,
+			MaxCapacity: station.MaxCapacity},
+	})
+	helper.MaybeDieErr(err)
 }

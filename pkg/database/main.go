@@ -56,7 +56,14 @@ func UpdateBike(channel chan helper.Change, records []*Bike) {
 		}
 
 		// if record exists, change uuid to old uuid and update record
+		// also leave fake data the same
 		record.Id = oldrecord.Id
+		record.IsElectric = oldrecord.IsElectric
+		record.IsImmobilized = oldrecord.IsImmobilized
+		record.IsAbandoned = oldrecord.IsAbandoned
+		record.IsInStorage = oldrecord.IsInStorage
+		record.IsDefect = oldrecord.IsDefect
+
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&record)
@@ -65,7 +72,7 @@ func UpdateBike(channel chan helper.Change, records []*Bike) {
 	}
 }
 
-// updates records in the database and notifies changes through a channel.
+// Updates records in the database and notifies changes through a channel.
 func UpdateStation(channel chan helper.Change, records []*Station) {
 	db := GetDb()
 
@@ -75,10 +82,18 @@ func UpdateStation(channel chan helper.Change, records []*Station) {
 
 		if result.RowsAffected == 0 {
 			db.Create(&record)
+			// send change for created record to channel
+			channel <- helper.Change{
+				Table:      "Station",
+				Column:     "Created",
+				Id:         record.Id,
+				OpenDataId: record.OpenDataId,
+			}
 			continue
 		}
 
 		record.Id = oldrecord.Id
+		record.IsActive = oldrecord.IsActive
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&record)
@@ -87,14 +102,29 @@ func UpdateStation(channel chan helper.Change, records []*Station) {
 	}
 }
 
-func GetStationById(id string) Station {
+func GetStationById(id string) (Station, error) {
+	if id == "" {
+		return Station{}, fmt.Errorf("StationId is empty")
+	}
 	var station Station
 	db.Where("id = ?", id).First(&station)
-	return station
+	return station, nil
 }
 
-func GetBikeById(id string) Bike {
+func GetBikeById(id string) (Bike, error) {
+	if id == "" {
+		return Bike{}, fmt.Errorf("BikeId is empty")
+	}
 	var bike Bike
 	db.Where("id = ?", id).First(&bike)
-	return bike
+	return bike, nil
+}
+
+func GetUserById(id string) (User, error) {
+	if id == "" {
+		return User{}, fmt.Errorf("UserId is empty")
+	}
+	var user User
+	db.Where("id = ?", id).First(&user)
+	return user, nil
 }

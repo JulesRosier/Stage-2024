@@ -8,6 +8,7 @@ import (
 	"stage2024/pkg/helper"
 )
 
+// Compares two records and sends changes to a channel
 func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
 
 	change := helper.Change{}
@@ -33,7 +34,7 @@ func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
 				change.OldValue = fmt.Sprintf("(%v, %v)", oldv.Field(i), oldv.Field(i+1))
 				change.NewValue = fmt.Sprintf("(%v, %v)", newv.Field(i), newv.Field(i+1))
 				latchange = true
-			} else if newv.Field(i).Type().String() == "sql.NullBool" { // Special case for sql.NullBool
+			} else if newv.Field(i).Type().String() == "sql.NullBool" { // Special case for sql.NullBool because string conversion is different
 				change.OldValue = fmt.Sprintf("%v", oldv.Field(i).Field(0))
 				change.NewValue = fmt.Sprintf("%v", newv.Field(i).Field(0))
 			} else {
