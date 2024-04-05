@@ -34,7 +34,7 @@ func Init() {
 	db = database
 
 	slog.Info("Migrating database")
-	err = db.AutoMigrate(&User{}, &Bike{}, &Station{})
+	err = db.AutoMigrate(&User{}, &Bike{}, &Station{}, &Outbox{})
 	helper.MaybeDieErr(err)
 }
 

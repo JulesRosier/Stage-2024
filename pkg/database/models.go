@@ -45,6 +45,16 @@ type Station struct {
 	IsActive    sql.NullBool
 }
 
+type Outbox struct {
+	gorm.Model
+	Name    string `gorm:"primaryKey"`
+	Payload []byte
+}
+
+func (Outbox) TableName() string {
+	return "outbox"
+}
+
 // Converts a Bike into a BikeIdentification proto event struct
 func (b Bike) IntoId() *bikes.BikeIdentification {
 	return &bikes.BikeIdentification{
