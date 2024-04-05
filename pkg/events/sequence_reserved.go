@@ -1,25 +1,26 @@
 package events
 
 import (
-	"fmt"
+	"database/sql"
 	"log/slog"
 	"math/rand/v2"
 	"stage2024/pkg/database"
 	h "stage2024/pkg/helper"
 )
 
-const chanceAbandoned = 0.01
-const chanceDefect = 0.01
-const chanceImmobilized = 0.5
+const chanceAbandoned = 0.1
+const chanceDefect = 0.5
+const chanceImmobilized = 5.0
 
 func (ec EventClient) startReservedsequence(bike database.Bike, change h.Change) h.Change {
 	db := database.GetDb()
 
 	user := database.User{}
-	db.Order("random()").Find(&user)
+	db.Order("random()").First(&user)
 
+	//get station that is not empty and active
 	station := database.Station{}
-	db.Order("random()").Find(&station)
+	db.Where("occupation > ? AND is_active = ?", 0, true).Order("random()").First(&station)
 
 	change.User_id = user.Id
 	change.Station_id = station.Id
@@ -32,18 +33,30 @@ func (ec EventClient) startReservedsequence(bike database.Bike, change h.Change)
 
 func (ec EventClient) dorestofsequence(bike database.Bike, change h.Change) {
 	slog.Info("Starting sequence RESERVED", "bike", bike.OpenDataId)
+
+	db := database.GetDb()
+
 	h.RandSleep(60*5, 60)
 
 	change.Column = "PickedUp"
 	ec.Channel <- change
 
-	changestation := ec.stationOccupationDecrease(change)
+	// Set bike to unavailable, set is_reserved to false
+	bike.IsAvailable = sql.NullBool{Bool: false, Valid: true}
+	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+	database.UpdateBike(ec.Channel, []*database.Bike{&bike})
 
-	ec.Channel <- changestation
+	// Update station occupation
+	pickupStation, err := database.GetStationById(change.Station_id)
+	h.MaybeDieErr(err)
+	pickupStation.Occupation--
+	database.UpdateStation(ec.Channel, []*database.Station{&pickupStation})
 
 	h.RandSleep(60*5, 60)
 
 	if rand.Float32() < chanceAbandoned {
+		bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
+		database.UpdateBikeNoNotify(&bike)
 		change.Column = "IsAbandoned"
 		ec.Channel <- change
 		return
@@ -51,9 +64,13 @@ func (ec EventClient) dorestofsequence(bike database.Bike, change h.Change) {
 
 	if rand.Float32() < chanceDefect {
 		change.Column = "IsDefect"
+		bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
 		change.Defect = defects[rand.IntN(len(defects))] // get random defect
 		ec.Channel <- change
+
 		if rand.Float32() < chanceImmobilized {
+			bike.IsImmobilized = sql.NullBool{Bool: true, Valid: true}
+			database.UpdateBikeNoNotify(&bike)
 			change.Column = "IsImmobilized"
 			ec.Channel <- change
 		}
@@ -61,24 +78,21 @@ func (ec EventClient) dorestofsequence(bike database.Bike, change h.Change) {
 
 	h.RandSleep(60*5, 60)
 
+	// Get station that is not full
 	change.Column = "Returned"
-	// change.Station_id = //TODO generate station where bike is returned
+	returnstation := database.Station{}
+	db.Where("occupation < max_capacity AND is_active = ?", true).Order("random()").First(&returnstation)
+	change.Station_id = returnstation.Id
 	ec.Channel <- change
-}
 
-func (ec EventClient) stationOccupationDecrease(change h.Change) h.Change {
-	db := database.GetDb()
-	station := database.Station{}
-	//TODO  get old value from db to add into event
-	db.Find(&station, "id = ?", change.Station_id)
+	// Update station occupation
+	returnstation.Occupation++
+	database.UpdateStation(ec.Channel, []*database.Station{&returnstation})
 
-	return h.Change{
-		Table:    "Station",
-		Column:   "occupation",
-		Id:       change.Station_id,
-		OldValue: fmt.Sprint(station.Occupation),
-		NewValue: fmt.Sprint(station.Occupation - 1),
-	}
+	// Set bike to available
+	bike.IsAvailable = sql.NullBool{Bool: true, Valid: true}
+	database.UpdateBike(ec.Channel, []*database.Bike{&bike})
+
 }
 
 var defects = []string{

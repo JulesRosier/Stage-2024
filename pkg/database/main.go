@@ -128,3 +128,18 @@ func GetUserById(id string) (User, error) {
 	db.Where("id = ?", id).First(&user)
 	return user, nil
 }
+
+// Updates the bike in the database, does NOT notify changes through a channel.
+func UpdateBikeNoNotify(bike *Bike) {
+	db = GetDb()
+	oldbike := &Bike{}
+	result := db.Limit(1).Find(&oldbike, "open_data_id = ?", bike.OpenDataId)
+
+	if result.RowsAffected == 0 {
+		helper.MaybeDieErr(fmt.Errorf("bike not found %v", bike))
+	}
+
+	db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&bike)
+}
