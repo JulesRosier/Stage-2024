@@ -10,12 +10,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func occupationChange(station database.Station, change helper.Change) {
+func (ec EventClient) occupationChange(station database.Station, change helper.Change) {
 	//station full
 	if station.Occupation == station.MaxCapacity {
 		slog.Info("Station is full, sending event...", "station", station.OpenDataId)
 
-		err := kc.Produce(&stations.StationCapacityExhausted{
+		err := ec.Kc.Produce(&stations.StationCapacityExhausted{
 			TimeStamp:   timestamppb.Now(),
 			Station:     station.IntoId(),
 			MaxCapacity: station.MaxCapacity,
@@ -27,7 +27,7 @@ func occupationChange(station database.Station, change helper.Change) {
 	if change.NewValue > change.OldValue {
 		slog.Info("Station occupation increased, sending event...", "station", station.OpenDataId)
 
-		err := kc.Produce(&stations.StationCapacityIncreased{
+		err := ec.Kc.Produce(&stations.StationCapacityIncreased{
 			TimeStamp:                timestamppb.Now(),
 			Station:                  station.IntoId(),
 			AmountIncreased:          helper.StringToInt(change.NewValue) - helper.StringToInt(change.OldValue),
@@ -41,7 +41,7 @@ func occupationChange(station database.Station, change helper.Change) {
 	if change.NewValue < change.OldValue {
 		slog.Info("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
-		err := kc.Produce(&stations.StationCapacityDecreased{
+		err := ec.Kc.Produce(&stations.StationCapacityDecreased{
 			TimeStamp:                timestamppb.Now(),
 			Station:                  station.IntoId(),
 			AmountDecreased:          (helper.StringToInt(change.OldValue) - helper.StringToInt(change.NewValue)),
@@ -52,12 +52,12 @@ func occupationChange(station database.Station, change helper.Change) {
 	}
 }
 
-func activeChange(station database.Station, change helper.Change) {
+func (ec EventClient) activeChange(station database.Station, change helper.Change) {
 	//station deprecated
 	fmt.Println()
 	if change.NewValue == "false" {
 		slog.Info("Station deprecated, sending event...", "station", station.OpenDataId)
-		err := kc.Produce(&stations.StationDeprecated{
+		err := ec.Kc.Produce(&stations.StationDeprecated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.DeprecatedStation{
 				Station:  station.IntoId(),
@@ -70,7 +70,7 @@ func activeChange(station database.Station, change helper.Change) {
 	//station created/activated
 	if change.NewValue == "true" {
 		slog.Info("Station created, sending event...", "station", station.OpenDataId)
-		err := kc.Produce(&stations.StationCreated{
+		err := ec.Kc.Produce(&stations.StationCreated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.CreatedStation{
 				Station:     station.IntoId(),
@@ -82,9 +82,9 @@ func activeChange(station database.Station, change helper.Change) {
 	}
 }
 
-func created(station database.Station) {
+func (ec EventClient) created(station database.Station) {
 	slog.Info("Station created, sending event...", "station", station.OpenDataId)
-	err := kc.Produce(&stations.StationCreated{
+	err := ec.Kc.Produce(&stations.StationCreated{
 		TimeStamp: timestamppb.Now(),
 		Station: &stations.CreatedStation{
 			Station:     station.IntoId(),

@@ -16,12 +16,12 @@ func locationchange(bike database.Bike) {
 }
 
 // Sends BikeImmobilized event. Needs bike and change.
-func immobilizedChange(bike database.Bike, change helper.Change) {
+func (ec EventClient) immobilizedChange(bike database.Bike, change helper.Change) {
 	//TODO add event for bike mobilized
 	//bike immobilized
 	if change.NewValue == "true" {
 		slog.Info("Bike immobilized, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeImmobilized{
+		err := ec.Kc.Produce(&bikes.BikeImmobilized{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.LocationBike{
 				Bike: bike.IntoId(),
@@ -36,11 +36,11 @@ func immobilizedChange(bike database.Bike, change helper.Change) {
 }
 
 // Sends BikeAbandoned event. Needs user
-func abandonedChange(bike database.Bike, user database.User, change helper.Change) {
+func (ec EventClient) abandonedChange(bike database.Bike, user database.User, change helper.Change) {
 	//bike abandoned
 	if change.NewValue == "true" {
 		slog.Info("Bike abandoned, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeAbandoned{
+		err := ec.Kc.Produce(&bikes.BikeAbandoned{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.AbandonedBike{
 				Bike: bike.IntoId(),
@@ -74,10 +74,10 @@ func availableChange(bike database.Bike, station database.Station, user database
 }
 
 // sends BikeBroughtOut and BikeStored events. Needs bike and change.
-func isInStorageChange(bike database.Bike, change helper.Change) {
+func (ec EventClient) isInStorageChange(bike database.Bike, change helper.Change) {
 	if change.NewValue == "false" {
 		slog.Info("Bike brought out, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeBroughtOut{
+		err := ec.Kc.Produce(&bikes.BikeBroughtOut{
 			TimeStamp: timestamppb.Now(),
 			Bike:      bike.IntoId(),
 		})
@@ -85,7 +85,7 @@ func isInStorageChange(bike database.Bike, change helper.Change) {
 	}
 	if change.NewValue == "true" {
 		slog.Debug("Bike stored, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeStored{
+		err := ec.Kc.Produce(&bikes.BikeStored{
 			TimeStamp: timestamppb.Now(),
 			Bike:      bike.IntoId(),
 		})
@@ -94,11 +94,15 @@ func isInStorageChange(bike database.Bike, change helper.Change) {
 }
 
 // Sends BikeReserved event. Needs station and user.
-func reservedChange(bike database.Bike, station database.Station, user database.User, change helper.Change) {
+func (ec EventClient) reservedChange(bike database.Bike, change helper.Change) {
 	//bike reserved
 	if change.NewValue == "true" {
 		slog.Info("Bike reserved, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeReserved{
+
+		change = ec.startReservedsequence(bike, change)
+		station, user := stationAndUser(change)
+
+		err := ec.Kc.Produce(&bikes.BikeReserved{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.Bike{
 				Bike:       bike.IntoId(),
@@ -112,11 +116,11 @@ func reservedChange(bike database.Bike, station database.Station, user database.
 }
 
 // Sends BikeDefectReported event. Needs bike, user and defect.
-func defectChange(bike database.Bike, user database.User, change helper.Change, defect string) {
+func (ec EventClient) defectChange(bike database.Bike, user database.User, change helper.Change, defect string) {
 	//bike defect
 	if change.NewValue == "true" {
 		slog.Info("Bike defect, sending event...", "bike", bike.OpenDataId)
-		err := kc.Produce(&bikes.BikeDefectReported{
+		err := ec.Kc.Produce(&bikes.BikeDefectReported{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.DefectBike{
 				Bike: bike.IntoId(),
@@ -131,4 +135,28 @@ func defectChange(bike database.Bike, user database.User, change helper.Change, 
 		})
 		helper.MaybeDieErr(err)
 	}
+}
+
+func (ec EventClient) pickedUpChange(bike database.Bike, station database.Station, user database.User) {
+	//bike picked up
+	slog.Info("Bike picked up, sending event...", "bike", bike.OpenDataId)
+	err := ec.Kc.Produce(&bikes.BikePickedUp{
+		TimeStamp: timestamppb.Now(),
+		Bike:      bike.IntoId(),
+		Station:   station.IntoId(),
+		User:      user.IntoId(),
+	})
+	helper.MaybeDieErr(err)
+}
+
+func (ec EventClient) returnedChange(bike database.Bike, station database.Station, user database.User) {
+	//bike returned
+	slog.Info("Bike returned, sending event...", "bike", bike.OpenDataId)
+	err := ec.Kc.Produce(&bikes.BikeReturned{
+		TimeStamp: timestamppb.Now(),
+		Bike:      bike.IntoId(),
+		Station:   station.IntoId(),
+		User:      user.IntoId(),
+	})
+	helper.MaybeDieErr(err)
 }
