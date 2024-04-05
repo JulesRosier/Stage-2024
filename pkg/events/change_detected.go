@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
 )
@@ -50,59 +49,25 @@ func (ec EventClient) bikechange(change helper.Change) {
 	case "IsImmobilized":
 		ec.immobilizedChange(bike, change) // generated
 	case "IsAbandoned":
-		user := user(change)
-		ec.abandonedChange(bike, user, change) // generated
+		ec.abandonedChange(bike, change) // generated
 	case "IsAvailable":
 		//TODO Real event, needs generated station and user
 		// what event is this?
-		change.Station_id = "00000000-test-test-test-000000000000"
-		change.User_id = "00f9c353-ec33-42c0-81fa-125fdf66c6a3"
-		station, user := stationAndUser(change)
-		availableChange(bike, station, user, change) //real
+		availableChange(bike, change) //real
 	case "IsInStorage":
 		ec.isInStorageChange(bike, change) // generated
 	case "IsReserved":
-		//TODO real event, needs generated station and user
 		//start reserved sequence
-
 		ec.reservedChange(bike, change) //real
 	case "IsDefect":
-		user, defect := userdefect(change)
-		ec.defectChange(bike, user, change, defect) //generated
+		ec.defectChange(bike, change) //generated
 	case "PickedUp":
-		station, user := stationAndUser(change)
-		ec.pickedUpChange(bike, station, user)
+		ec.pickedUpChange(bike, change)
 	case "Returned":
-		station, user := stationAndUser(change)
-		ec.returnedChange(bike, station, user)
+
+		ec.returnedChange(bike, change)
 	}
 
 }
 
 //generated values for IsImmobilized, IsAbandoned, IsInStorage, IsDefect
-
-// checks if station and user are present and returns them
-func stationAndUser(change helper.Change) (database.Station, database.User) {
-	station, err := database.GetStationById(change.Station_id)
-	helper.MaybeDieErr(err)
-	user, err := database.GetUserById(change.User_id)
-	helper.MaybeDieErr(err)
-	return station, user
-}
-
-// checks if user is present and returns it
-func user(change helper.Change) database.User {
-	user, err := database.GetUserById(change.User_id)
-	helper.MaybeDieErr(err)
-	return user
-}
-
-// checks if user and defect are present and returns them
-func userdefect(change helper.Change) (database.User, string) {
-	user, err := database.GetUserById(change.User_id)
-	helper.MaybeDieErr(err)
-	if change.Defect == "" {
-		helper.Die(fmt.Errorf("defect change detected, but no defect was given. defect=%v", change.Defect))
-	}
-	return user, change.Defect
-}

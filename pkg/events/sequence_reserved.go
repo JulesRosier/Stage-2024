@@ -8,9 +8,10 @@ import (
 	h "stage2024/pkg/helper"
 )
 
-const chanceAbandoned = 0.1
-const chanceDefect = 0.5
-const chanceImmobilized = 5.0
+const chanceAbandoned = 10.1
+const chanceDefect = 10.5
+const chanceImmobilized = 15.0
+const chanceInStorage = 0.5
 
 func (ec EventClient) startReservedsequence(bike database.Bike, change h.Change) h.Change {
 	db := database.GetDb()
@@ -73,6 +74,14 @@ func (ec EventClient) dorestofsequence(bike database.Bike, change h.Change) {
 			database.UpdateBikeNoNotify(&bike)
 			change.Column = "IsImmobilized"
 			ec.Channel <- change
+
+			if rand.Float32() < chanceInStorage {
+				bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
+				database.UpdateBikeNoNotify(&bike)
+				change.Column = "IsInStorage"
+				change.NewValue = "true"
+				ec.Channel <- change
+			}
 		}
 	}
 
