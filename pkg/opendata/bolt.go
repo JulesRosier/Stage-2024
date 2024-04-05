@@ -57,7 +57,7 @@ func Bolt(channel chan helper.Change) {
 	database.UpdateBike(channel, records)
 
 	biketest := &database.Bike{
-		Id:            "00000000-test-test-test-000000000000",
+		Id:            "00000000-eeee-eeee-eeee-000000000000",
 		OpenDataId:    "bike-test",
 		BikeModel:     "test",
 		Lat:           0,
