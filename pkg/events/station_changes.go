@@ -15,7 +15,7 @@ func (ec EventClient) occupationChange(station database.Station, change helper.C
 	if station.Occupation == station.MaxCapacity {
 		slog.Info("Station is full, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationCapacityExhausted{
+		err := ec.Kc.Produce(&stations.StationFull{
 			TimeStamp:   timestamppb.Now(),
 			Station:     station.IntoId(),
 			MaxCapacity: station.MaxCapacity,
@@ -27,7 +27,7 @@ func (ec EventClient) occupationChange(station database.Station, change helper.C
 	if change.NewValue > change.OldValue {
 		slog.Info("Station occupation increased, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationCapacityIncreased{
+		err := ec.Kc.Produce(&stations.StationOccupationIncreased{
 			TimeStamp:                timestamppb.Now(),
 			Station:                  station.IntoId(),
 			AmountIncreased:          helper.StringToInt(change.NewValue) - helper.StringToInt(change.OldValue),
@@ -41,7 +41,7 @@ func (ec EventClient) occupationChange(station database.Station, change helper.C
 	if change.NewValue < change.OldValue {
 		slog.Info("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationCapacityDecreased{
+		err := ec.Kc.Produce(&stations.StationOccupationDecreased{
 			TimeStamp:                timestamppb.Now(),
 			Station:                  station.IntoId(),
 			AmountDecreased:          (helper.StringToInt(change.OldValue) - helper.StringToInt(change.NewValue)),

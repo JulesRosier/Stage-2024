@@ -3,8 +3,10 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "stations/station_identification.proto";
 
-message station_capacity_exhausted {
+message station_occupation_increased {
     google.protobuf.Timestamp time_stamp = 1;
     station_identification station = 2;
-    int32 max_capacity = 3;
+    int32 amount_increased = 3;
+    int32 current_available_capacity = 4;
+    int32 max_capacity = 5;
 }

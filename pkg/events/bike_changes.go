@@ -77,7 +77,7 @@ func availableChange(bike database.Bike, station database.Station, user database
 func (ec EventClient) isInStorageChange(bike database.Bike, change helper.Change) {
 	if change.NewValue == "false" {
 		slog.Info("Bike brought out, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeBroughtOut{
+		err := ec.Kc.Produce(&bikes.BikeDeployed{
 			TimeStamp: timestamppb.Now(),
 			Bike:      bike.IntoId(),
 		})

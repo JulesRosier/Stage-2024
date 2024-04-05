@@ -38,16 +38,16 @@ func main() {
 
 		{ProtoFile: bikes.File_bikes_bike_abandoned_proto, PType: &bikes.BikeAbandoned{}},
 		{ProtoFile: bikes.File_bikes_bike_defect_reported_proto, PType: &bikes.BikeDefectReported{}},
-		{ProtoFile: bikes.File_bikes_bike_brought_out_proto, PType: &bikes.BikeBroughtOut{}},
+		{ProtoFile: bikes.File_bikes_bike_deployed_proto, PType: &bikes.BikeDeployed{}},
 		{ProtoFile: bikes.File_bikes_bike_immobilized_proto, PType: &bikes.BikeImmobilized{}},
 		{ProtoFile: bikes.File_bikes_bike_picked_up_proto, PType: &bikes.BikePickedUp{}},
 		{ProtoFile: bikes.File_bikes_bike_reserved_proto, PType: &bikes.BikeReserved{}},
 		{ProtoFile: bikes.File_bikes_bike_returned_proto, PType: &bikes.BikeReturned{}},
 		{ProtoFile: bikes.File_bikes_bike_stored_proto, PType: &bikes.BikeStored{}},
 
-		{ProtoFile: stations.File_stations_station_capacity_decreased_proto, PType: &stations.StationCapacityDecreased{}},
-		{ProtoFile: stations.File_stations_station_capacity_exhausted_proto, PType: &stations.StationCapacityExhausted{}},
-		{ProtoFile: stations.File_stations_station_capacity_increased_proto, PType: &stations.StationCapacityIncreased{}},
+		{ProtoFile: stations.File_stations_station_occupation_increased_proto, PType: &stations.StationOccupationDecreased{}},
+		{ProtoFile: stations.File_stations_station_full_proto, PType: &stations.StationFull{}},
+		{ProtoFile: stations.File_stations_station_occupation_decreased_proto, PType: &stations.StationOccupationIncreased{}},
 		{ProtoFile: stations.File_stations_station_created_proto, PType: &stations.StationCreated{}},
 		{ProtoFile: stations.File_stations_station_deprecated_proto, PType: &stations.StationDeprecated{}},
 	}

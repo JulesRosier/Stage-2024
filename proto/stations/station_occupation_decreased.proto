@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "stations/station_identification.proto";
 
-message station_capacity_decreased {
+message station_occupation_decreased {
     google.protobuf.Timestamp time_stamp = 1;
     station_identification station = 2;
     int32 amount_decreased = 3;
