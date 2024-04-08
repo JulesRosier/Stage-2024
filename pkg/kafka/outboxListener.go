@@ -36,7 +36,7 @@ func (ol *OutboxListener) Start() {
 
 func (ol *OutboxListener) listen() {
 	for o := range ol.queue {
-		ol.db.Transaction(func(tx *gorm.DB) error {
+		err := ol.db.Transaction(func(tx *gorm.DB) error {
 			err := tx.Delete(&o).Error
 			if err != nil {
 				return err
@@ -52,6 +52,9 @@ func (ol *OutboxListener) listen() {
 			}
 			return nil
 		})
+		if err != nil {
+			slog.Warn("Outbox listener transaction failed", "error", err)
+		}
 	}
 }
 
