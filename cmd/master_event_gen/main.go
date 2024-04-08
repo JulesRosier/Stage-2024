@@ -56,6 +56,9 @@ func main() {
 		Topics: topics,
 	})
 
+	ol := kafka.NewOutboxListener(kc, db, topics)
+	ol.Start()
+
 	i := 0
 	for i < 10 {
 		i++
@@ -73,6 +76,8 @@ func main() {
 	s.Schedule(time.Minute*10, func() { opendata.Donkey(ec.Channel) })
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(ec.Channel) })
 	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(ec.Channel) })
+
+	s.Schedule(time.Second*30, ol.FetchOutboxData)
 
 	go func() {
 		for change := range ec.Channel {

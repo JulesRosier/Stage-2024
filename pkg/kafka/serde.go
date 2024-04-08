@@ -18,7 +18,7 @@ const protoDir = "./proto"
 type Topic struct {
 	Name      string
 	ProtoFile protoreflect.FileDescriptor
-	PType     any
+	PType     protoreflect.ProtoMessage
 }
 
 func (t Topic) getName(suffix string) string {

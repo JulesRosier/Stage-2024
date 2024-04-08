@@ -20,6 +20,7 @@ type KafkaClient struct {
 	Serde  *sr.Serde
 	Config Config
 }
+
 type Config struct {
 	Topics []Topic
 }
@@ -45,12 +46,18 @@ func (c KafkaClient) Produce(item any) error {
 		return err
 	}
 	record := &kgo.Record{Topic: topic, Value: itemBytes, Key: []byte(strings.SplitN(topic, "_", 2)[0])}
-	c.Kcl.Produce(context.Background(), record, func(r *kgo.Record, err error) {
-		if err != nil {
-			slog.Warn("Produce failed", "error", err)
+	// c.Kcl.Produce(context.Background(), record, func(r *kgo.Record, err error) {
+	// 	if err != nil {
+	// 		slog.Warn("Produce failed", "error", err)
+	// 	}
+	// 	slog.Debug("Produced event", "topic", topic, "offset", r.Offset)
+	// })
+	rs := c.Kcl.ProduceSync(context.Background(), record)
+	for _, r := range rs {
+		if r.Err != nil {
+			return r.Err
 		}
-		slog.Debug("Produced event", "topic", topic, "offset", r.Offset)
-	})
+	}
 	return nil
 }
 
