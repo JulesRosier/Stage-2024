@@ -98,8 +98,8 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 	database.UpdateStation([]*database.Station{&returnstation}, db)
 
 	// Set bike to available
-	bike.IsAvailable = sql.NullBool{Bool: true, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike})
+	bike.InUseTimestamp = sql.NullTime{}
+	database.UpdateBike([]*database.Bike{&bike}, db)
 
 }
 
