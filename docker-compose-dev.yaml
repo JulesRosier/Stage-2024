@@ -3,9 +3,14 @@ version: "3.7"
 name: redpanda
 networks:
   redpanda_network:
+    name: redpanda_network
     driver: bridge
+    attachable: true
   postgress_network:
+    name: postgress_network
     driver: bridge
+    attachable: true
+
 volumes:
   redpanda-0: null
   local_pgdata:
