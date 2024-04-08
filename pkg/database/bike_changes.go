@@ -11,12 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO add events for bike location changes
-func locationchange(bike Bike) error {
-	// slog.Info("Bike location changed, sending event...", "bike", bike.OpenDataId)
-	return nil
-}
-
 // Sends BikeImmobilized event. Needs bike and change.
 func immobilizedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//TODO add event for bike mobilized
@@ -61,27 +55,6 @@ func abandonedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 			return err
 		}
 	}
-	return nil
-}
-
-// Sends No event???. Needs station and user
-func availableChange(bike Bike, change helper.Change) error {
-	//bike available
-	// if change.NewValue == "true" {
-	// 	slog.Info("Bike available, sending event...", "bike", bike.OpenDataId)
-	//	station, user := stationAndUser(change)
-
-	// 	err := kc.Produce(&bikes.BikeReserved{
-	// 		TimeStamp: timestamppb.Now(),
-	// 		Bike: &bikes.Bike{
-	// 			Bike:       bike.IntoId(),
-	// 			IsElectric: bike.IsElectric.Bool,
-	// 		},
-	// 		Station: station.IntoId(),
-	// 		User:    user.IntoId(),
-	// 	})
-	// 	helper.MaybeDieErr(err)
-	// }
 	return nil
 }
 

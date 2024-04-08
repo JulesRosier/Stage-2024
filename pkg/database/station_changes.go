@@ -2,6 +2,7 @@ package database
 
 import (
 	"log/slog"
+	"reflect"
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/stations"
 
@@ -24,6 +25,14 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 			return err
 		}
 
+		//add historical data and add topic name
+		record := &Station{}
+		db.Limit(1).Find(&record, "id = ?", change.Id)
+		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
+		if err := addHistoricaldata(record, topic, db); err != nil {
+			return err
+		}
+
 		return nil
 	}
 
@@ -43,6 +52,14 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		if err := createOutboxRecord(now, protostruct, db); err != nil {
 			return err
 		}
+
+		//add historical data, get record and add topic name
+		record := &Station{}
+		db.Limit(1).Find(&record, "id = ?", change.Id)
+		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
+		if err := addHistoricaldata(record, topic, db); err != nil {
+			return err
+		}
 	}
 
 	//station occupation decreased
@@ -59,6 +76,14 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		}
 
 		if err := createOutboxRecord(now, protostruct, db); err != nil {
+			return err
+		}
+
+		//add historical data, get record and add topic name
+		record := &Station{}
+		db.Limit(1).Find(&record, "id = ?", change.Id)
+		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
+		if err := addHistoricaldata(record, topic, db); err != nil {
 			return err
 		}
 	}
@@ -102,7 +127,7 @@ func activeChange(station Station, change helper.Change, db *gorm.DB) error {
 	return nil
 }
 
-func created(station Station, db *gorm.DB) error {
+func created(station Station, change helper.Change, db *gorm.DB) error {
 	slog.Debug("Station created, sending event...", "station", station.OpenDataId)
 	now := timestamppb.Now()
 	protostruct := &stations.StationCreated{
@@ -116,5 +141,14 @@ func created(station Station, db *gorm.DB) error {
 	if err := createOutboxRecord(now, protostruct, db); err != nil {
 		return err
 	}
+
+	//add historical data, get record and add topic name
+	record := &Station{}
+	db.Limit(1).Find(&record, "id = ?", change.Id)
+	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
+	if err := addHistoricaldata(record, topic, db); err != nil {
+		return err
+	}
+
 	return nil
 }

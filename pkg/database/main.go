@@ -75,7 +75,7 @@ func UpdateBike(records []*Bike, db *gorm.DB) {
 	}
 }
 
-// Updates records in the database and notifies changes through a channel.
+// Updates records in the database and sends changed records to function that checks changes
 func UpdateStation(records []*Station, db *gorm.DB) {
 
 	for _, record := range records {
@@ -85,9 +85,6 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 		if result.RowsAffected == 0 {
 			//start transaction for new station created
 			err := db.Transaction(func(tx *gorm.DB) error {
-				if err := addHistoricaldata(record, tx); err != nil {
-					return err
-				}
 
 				if err := db.Create(&record).Error; err != nil {
 					return err
@@ -115,9 +112,6 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 		} else {
 			record.Id = oldrecord.Id
 			err := db.Transaction(func(tx *gorm.DB) error {
-				if err := addHistoricaldata(record, tx); err != nil {
-					return err
-				}
 
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -176,9 +170,10 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 	return db.Create(&Outbox{EventTimestamp: now.AsTime(), Topic: topic, Payload: payload}).Error
 }
 
-// TODO
-func addHistoricaldata(record *Station, db *gorm.DB) error {
+// adds historical station data
+func addHistoricaldata(record *Station, topicname string, db *gorm.DB) error {
 	historicaldata := record.ToHistoricalStationData()
+	historicaldata.TopicName = topicname
 	if err := db.Create(&historicaldata).Error; err != nil {
 		return err
 	}

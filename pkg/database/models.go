@@ -64,6 +64,7 @@ type HistoricalStationData struct {
 	MaxCapacity int32
 	Occupation  int32
 	IsActive    sql.NullBool
+	TopicName   string
 	Checked     bool
 }
 

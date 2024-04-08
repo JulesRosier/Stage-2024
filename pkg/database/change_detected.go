@@ -40,7 +40,7 @@ func stationchange(change helper.Change, db *gorm.DB) error {
 		err := activeChange(station, change, db)
 		return err
 	case "Created":
-		err := created(station, db)
+		err := created(station, change, db)
 		return err
 	}
 
@@ -53,19 +53,11 @@ func bikechange(change helper.Change, db *gorm.DB) error {
 	helper.MaybeDieErr(err)
 
 	switch change.Column {
-	case "Lat", "Lon":
-		err := locationchange(bike) // TODO, no event for this
-		return err
 	case "IsImmobilized":
 		err := immobilizedChange(bike, change, db) // generated
 		return err
 	case "IsAbandoned":
 		err := abandonedChange(bike, change, db) // generated
-		return err
-	case "IsAvailable":
-		//TODO Real event, needs generated station and user
-		// what event is this?
-		err := availableChange(bike, change) //real
 		return err
 	case "IsInStorage":
 		err := isInStorageChange(bike, change, db) // generated
