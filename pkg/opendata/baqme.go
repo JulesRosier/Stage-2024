@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Baqme(channel chan helper.Change) {
+func Baqme() {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/baqme-locaties-vrije-deelfietsen-gent/records"
 	model := "Baqme"
 
@@ -52,7 +52,7 @@ func Baqme(channel chan helper.Change) {
 			return out
 		},
 	)
-	database.UpdateBike(channel, records)
+	database.UpdateBike(records)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

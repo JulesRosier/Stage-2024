@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func StorageTownHall(channelCh chan helper.Change) {
+func StorageTownHall() {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
 	model := "StorageTownHall"
 
@@ -52,7 +52,7 @@ func StorageTownHall(channelCh chan helper.Change) {
 			return out
 		},
 	)
-	database.UpdateStation(channelCh, records)
+	database.UpdateStation(records)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

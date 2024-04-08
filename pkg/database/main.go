@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"reflect"
 	"stage2024/pkg/helper"
 
 	_ "github.com/joho/godotenv/autoload"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -43,7 +46,7 @@ func GetDb() *gorm.DB {
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateBike(channel chan helper.Change, records []*Bike) {
+func UpdateBike(records []*Bike) {
 	db := GetDb()
 	for _, record := range records {
 		oldrecord := &Bike{}
@@ -68,12 +71,12 @@ func UpdateBike(channel chan helper.Change, records []*Bike) {
 			UpdateAll: true,
 		}).Create(&record)
 
-		ColumnChange(oldrecord, record, channel)
+		ColumnChange(oldrecord, record, db)
 	}
 }
 
 // Updates records in the database and notifies changes through a channel.
-func UpdateStation(channel chan helper.Change, records []*Station) {
+func UpdateStation(records []*Station) {
 	db := GetDb()
 
 	for _, record := range records {
@@ -81,24 +84,54 @@ func UpdateStation(channel chan helper.Change, records []*Station) {
 		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
 
 		if result.RowsAffected == 0 {
-			db.Create(&record)
-			// send change for created record to channel
-			channel <- helper.Change{
-				Table:      "Station",
-				Column:     "Created",
-				Id:         record.Id,
-				OpenDataId: record.OpenDataId,
+			//start transaction for new station created
+			err := db.Transaction(func(tx *gorm.DB) error {
+				if err := db.Create(&record).Error; err != nil {
+					return err
+				}
+
+				// send change for created record to function
+				created := helper.Change{
+					Table:      "Station",
+					Column:     "Created",
+					Id:         record.Id,
+					OpenDataId: record.OpenDataId,
+				}
+
+				err := ChangeDetected(created, tx)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})
+			if err != nil {
+				slog.Warn("Transaction failed", "error", err)
 			}
-			continue
+
+		} else {
+
+			err := db.Transaction(func(tx *gorm.DB) error {
+				record.Id = oldrecord.Id
+
+				err := tx.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(&record).Error
+				if err != nil {
+					return err
+				}
+
+				if err := ColumnChange(oldrecord, record, tx); err != nil {
+					return err
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				slog.Warn("Transaction failed", "error", err)
+			}
 		}
-
-		record.Id = oldrecord.Id
-		record.IsActive = oldrecord.IsActive
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&record)
-
-		ColumnChange(oldrecord, record, channel)
 	}
 }
 
@@ -129,17 +162,7 @@ func GetUserById(id string) (User, error) {
 	return user, nil
 }
 
-// Updates the bike in the database, does NOT notify changes through a channel.
-func UpdateBikeNoNotify(bike *Bike) {
-	db = GetDb()
-	oldbike := &Bike{}
-	result := db.Limit(1).Find(&oldbike, "open_data_id = ?", bike.OpenDataId)
-
-	if result.RowsAffected == 0 {
-		helper.MaybeDieErr(fmt.Errorf("bike not found %v", bike))
-	}
-
-	db.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&bike)
+func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, payload []byte, db *gorm.DB) error {
+	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
+	return db.Create(&Outbox{EventTimestamp: now.AsTime(), Topic: topic, Payload: payload}).Error
 }

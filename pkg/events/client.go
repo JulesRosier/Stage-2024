@@ -13,7 +13,6 @@ type EventClient struct {
 func NewEventClient(kc *kafka.KafkaClient) *EventClient {
 
 	return &EventClient{
-		Kc:      kc,
-		Channel: make(chan helper.Change, 100),
+		Kc: kc,
 	}
 }

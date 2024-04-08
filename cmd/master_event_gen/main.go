@@ -67,23 +67,15 @@ func main() {
 
 	s := scheduler.NewScheduler()
 
-	ec := events.NewEventClient(kc)
-
 	CreateUsers(db, kc)
-	s.Schedule(time.Minute*5, func() { opendata.Bolt(ec.Channel) })
-	s.Schedule(time.Minute*10, func() { opendata.Baqme(ec.Channel) })
-	s.Schedule(time.Minute*5, func() { opendata.BlueBike(ec.Channel) })
-	s.Schedule(time.Minute*10, func() { opendata.Donkey(ec.Channel) })
-	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(ec.Channel) })
-	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(ec.Channel) })
+	// s.Schedule(time.Minute*5, func() { opendata.Bolt() })
+	// s.Schedule(time.Minute*10, func() { opendata.Baqme() })
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike() })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey() })
+	s.Schedule(time.Minute*1, func() { opendata.StorageGhent() })
+	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall() })
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
-
-	go func() {
-		for change := range ec.Channel {
-			ec.ChangeDetected(change)
-		}
-	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

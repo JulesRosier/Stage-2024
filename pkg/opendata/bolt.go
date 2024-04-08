@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Bolt(channel chan helper.Change) {
+func Bolt() {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/bolt-deelfietsen-gent/records"
 	model := "Bolt"
 
@@ -54,7 +54,7 @@ func Bolt(channel chan helper.Change) {
 			return out
 		},
 	)
-	database.UpdateBike(channel, records)
+	database.UpdateBike(records)
 
 	biketest := &database.Bike{
 		Id:            "00000000-eeee-eeee-eeee-000000000000",
@@ -70,7 +70,7 @@ func Bolt(channel chan helper.Change) {
 		IsReserved:    sql.NullBool{Bool: true, Valid: true},
 		IsDefect:      sql.NullBool{Bool: false, Valid: true},
 	}
-	database.UpdateBike(channel, []*database.Bike{biketest})
+	database.UpdateBike([]*database.Bike{biketest})
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

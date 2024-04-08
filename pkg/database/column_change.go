@@ -6,15 +6,17 @@ import (
 	"log/slog"
 	"reflect"
 	"stage2024/pkg/helper"
+
+	"gorm.io/gorm"
 )
 
 // Compares two records and sends changes to a channel
-func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
+func ColumnChange(oldrecord any, record any, db *gorm.DB) error {
 
 	change := helper.Change{}
 
 	if reflect.TypeOf(oldrecord) != reflect.TypeOf(record) {
-		helper.Die(errors.New("record struct types do not match"))
+		return errors.New("record struct types do not match")
 	}
 
 	oldv := reflect.Indirect(reflect.ValueOf(oldrecord))
@@ -44,7 +46,11 @@ func ColumnChange(oldrecord any, record any, channel chan helper.Change) {
 
 			slog.Debug("change", "", change)
 
-			channel <- change
+			if err := ChangeDetected(change, db); err != nil {
+				return err
+			}
+
 		}
 	}
+	return nil
 }

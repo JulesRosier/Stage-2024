@@ -103,7 +103,7 @@ func (ec EventClient) reservedChange(bike database.Bike, change helper.Change) {
 	if change.NewValue == "true" {
 		slog.Info("Bike reserved, sending event...", "bike", bike.OpenDataId)
 
-		change = ec.startReservedsequence(bike, change)
+		//change = ec.startReservedsequence(bike, change)
 		station, user := stationAndUser(change)
 
 		err := ec.Kc.Produce(&bikes.BikeReserved{

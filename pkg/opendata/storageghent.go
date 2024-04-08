@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func StorageGhent(channel chan helper.Change) {
+func StorageGhent() {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezettingen-fietsenstallingen-gent/records"
 	model := "StorageGhent"
 
@@ -51,7 +51,7 @@ func StorageGhent(channel chan helper.Change) {
 			return out
 		},
 	)
-	database.UpdateStation(channel, records)
+	database.UpdateStation(records)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

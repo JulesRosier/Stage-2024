@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Donkey(channel chan helper.Change) {
+func Donkey() {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/donkey-republic-beschikbaarheid-deelfietsen-per-station/records"
 	model := "Donkey"
 
@@ -53,7 +53,7 @@ func Donkey(channel chan helper.Change) {
 			return out
 		},
 	)
-	database.UpdateStation(channel, records)
+	database.UpdateStation(records)
 
 	stationfull := &database.Station{
 		Id:          "00000000-test-test-test-000000000000",
@@ -62,10 +62,10 @@ func Donkey(channel chan helper.Change) {
 		Lon:         0,
 		Name:        "Station Full",
 		MaxCapacity: 5,
-		Occupation:  5,
+		Occupation:  4,
 		IsActive:    sql.NullBool{Bool: false, Valid: true},
 	}
-	database.UpdateStation(channel, []*database.Station{stationfull})
+	database.UpdateStation([]*database.Station{stationfull})
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

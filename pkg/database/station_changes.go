@@ -1,95 +1,144 @@
-package events
+package database
 
 import (
 	"fmt"
 	"log/slog"
-	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/stations"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 )
 
-func (ec EventClient) occupationChange(station database.Station, change helper.Change) {
+func occupationChange(station Station, change helper.Change, db *gorm.DB) error {
 	//station full
 	if station.Occupation == station.MaxCapacity {
 		slog.Info("Station is full, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationFull{
-			TimeStamp:   timestamppb.Now(),
+		now := timestamppb.Now()
+		protostruct := &stations.StationFull{
+			TimeStamp:   now,
 			Station:     station.IntoId(),
 			MaxCapacity: station.MaxCapacity,
-		})
-		helper.MaybeDieErr(err)
+		}
+		payload, err := proto.Marshal(protostruct)
+		if err != nil {
+			return err
+		}
+		if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+			return err
+		}
+
+		return err
 	}
 
 	//station occupation increased
 	if change.NewValue > change.OldValue {
 		slog.Info("Station occupation increased, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationOccupationIncreased{
-			TimeStamp:                timestamppb.Now(),
+		now := timestamppb.Now()
+		protostruct := &stations.StationOccupationIncreased{
+			TimeStamp:                now,
 			Station:                  station.IntoId(),
 			AmountIncreased:          helper.StringToInt(change.NewValue) - helper.StringToInt(change.OldValue),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
-		})
-		helper.MaybeDieErr(err)
+		}
+		payload, err := proto.Marshal(protostruct)
+
+		if err != nil {
+			return err
+		}
+		if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+			return err
+		}
 	}
 
 	//station occupation decreased
 	if change.NewValue < change.OldValue {
 		slog.Info("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
-		err := ec.Kc.Produce(&stations.StationOccupationDecreased{
-			TimeStamp:                timestamppb.Now(),
+		now := timestamppb.Now()
+		protostruct := &stations.StationOccupationDecreased{
+			TimeStamp:                now,
 			Station:                  station.IntoId(),
 			AmountDecreased:          (helper.StringToInt(change.OldValue) - helper.StringToInt(change.NewValue)),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
-		})
-		helper.MaybeDieErr(err)
+		}
+		payload, err := proto.Marshal(protostruct)
+		if err != nil {
+			return err
+		}
+		if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (ec EventClient) activeChange(station database.Station, change helper.Change) {
+func activeChange(station Station, change helper.Change, db *gorm.DB) error {
 	//station deprecated
 	fmt.Println()
 	if change.NewValue == "false" {
 		slog.Info("Station deprecated, sending event...", "station", station.OpenDataId)
-		err := ec.Kc.Produce(&stations.StationDeprecated{
+		now := timestamppb.Now()
+		protostruct := &stations.StationDeprecated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.DeprecatedStation{
 				Station:  station.IntoId(),
 				IsActive: station.IsActive.Bool,
 			},
-		})
-		helper.MaybeDieErr(err)
+		}
+		payload, err := proto.Marshal(protostruct)
+		if err != nil {
+			return err
+		}
+		if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+			return err
+		}
 	}
 
 	//station created/activated
 	if change.NewValue == "true" {
 		slog.Info("Station created, sending event...", "station", station.OpenDataId)
-		err := ec.Kc.Produce(&stations.StationCreated{
+		now := timestamppb.Now()
+		protostruct := &stations.StationCreated{
 			TimeStamp: timestamppb.Now(),
 			Station: &stations.CreatedStation{
 				Station:     station.IntoId(),
 				IsActive:    station.IsActive.Bool,
 				MaxCapacity: station.MaxCapacity},
-		})
-		helper.MaybeDieErr(err)
+		}
 
+		payload, err := proto.Marshal(protostruct)
+		if err != nil {
+			return err
+		}
+		if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (ec EventClient) created(station database.Station) {
+func created(station Station, db *gorm.DB) error {
 	slog.Info("Station created, sending event...", "station", station.OpenDataId)
-	err := ec.Kc.Produce(&stations.StationCreated{
+	now := timestamppb.Now()
+	protostruct := &stations.StationCreated{
 		TimeStamp: timestamppb.Now(),
 		Station: &stations.CreatedStation{
 			Station:     station.IntoId(),
 			IsActive:    station.IsActive.Bool,
 			MaxCapacity: station.MaxCapacity},
-	})
-	helper.MaybeDieErr(err)
+	}
+	payload, err := proto.Marshal(protostruct)
+	if err != nil {
+		return err
+	}
+	if err := createOutboxRecord(now, protostruct, payload, db); err != nil {
+		return err
+	}
+	return err
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func BlueBike(channel chan helper.Change) {
+func BlueBike() {
 	urls := []string{"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-dampoort/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-st-denijslaan/records",
@@ -58,7 +58,7 @@ func BlueBike(channel chan helper.Change) {
 				return out
 			},
 		)
-		database.UpdateStation(channel, records)
+		database.UpdateStation(records)
 	}
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
