@@ -49,7 +49,7 @@ type Station struct {
 type Outbox struct {
 	gorm.Model
 	EventTimestamp time.Time
-	Name           string `gorm:"primaryKey"`
+	Topic          string
 	Payload        []byte
 }
 
