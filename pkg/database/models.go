@@ -6,6 +6,7 @@ import (
 	"stage2024/pkg/protogen/common"
 	"stage2024/pkg/protogen/stations"
 	"stage2024/pkg/protogen/users"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -47,8 +48,9 @@ type Station struct {
 
 type Outbox struct {
 	gorm.Model
-	Name    string `gorm:"primaryKey"`
-	Payload []byte
+	EventTimestamp time.Time
+	Name           string `gorm:"primaryKey"`
+	Payload        []byte
 }
 
 func (Outbox) TableName() string {
