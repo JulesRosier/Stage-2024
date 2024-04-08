@@ -38,7 +38,7 @@ func NewDatabase() *DatabaseClient {
 	}
 
 	slog.Info("Migrating database")
-	err = db.AutoMigrate(&User{}, &Bike{}, &Station{}, &Outbox{})
+	err = db.AutoMigrate(&User{}, &Bike{}, &Station{}, &Outbox{}, &HistoricalStationData{})
 	helper.MaybeDieErr(err)
 
 	return &DatabaseClient{
@@ -85,6 +85,10 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 		if result.RowsAffected == 0 {
 			//start transaction for new station created
 			err := db.Transaction(func(tx *gorm.DB) error {
+				if err := addHistoricaldata(record, tx); err != nil {
+					return err
+				}
+
 				if err := db.Create(&record).Error; err != nil {
 					return err
 				}
@@ -109,9 +113,11 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 			}
 
 		} else {
-
+			record.Id = oldrecord.Id
 			err := db.Transaction(func(tx *gorm.DB) error {
-				record.Id = oldrecord.Id
+				if err := addHistoricaldata(record, tx); err != nil {
+					return err
+				}
 
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -168,4 +174,13 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 	}
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
 	return db.Create(&Outbox{EventTimestamp: now.AsTime(), Topic: topic, Payload: payload}).Error
+}
+
+// TODO
+func addHistoricaldata(record *Station, db *gorm.DB) error {
+	historicaldata := record.ToHistoricalStationData()
+	if err := db.Create(&historicaldata).Error; err != nil {
+		return err
+	}
+	return nil
 }

@@ -13,25 +13,26 @@ import (
 
 type Bike struct {
 	gorm.Model
-	Id            string `gorm:"primaryKey"`
-	OpenDataId    string
-	BikeModel     string
-	Lat           float64
-	Lon           float64
-	IsElectric    sql.NullBool
-	IsImmobilized sql.NullBool
-	IsAbandoned   sql.NullBool
-	IsAvailable   sql.NullBool
-	IsInStorage   sql.NullBool
-	IsReserved    sql.NullBool
-	IsDefect      sql.NullBool
+	Id             string `gorm:"primaryKey"`
+	OpenDataId     string
+	BikeModel      string
+	Lat            float64
+	Lon            float64
+	IsElectric     sql.NullBool
+	IsImmobilized  sql.NullBool
+	IsAbandoned    sql.NullBool
+	IsInStorage    sql.NullBool
+	IsReserved     sql.NullBool
+	IsDefect       sql.NullBool
+	InUseTimestamp sql.NullTime
 }
 
 type User struct {
 	gorm.Model
-	Id           string `gorm:"primaryKey"`
-	UserName     string
-	EmailAddress string
+	Id                   string `gorm:"primaryKey"`
+	UserName             string
+	EmailAddress         string
+	IsAvailableTimestamp sql.NullTime
 }
 
 type Station struct {
@@ -51,6 +52,33 @@ type Outbox struct {
 	EventTimestamp time.Time
 	Topic          string
 	Payload        []byte
+}
+
+type HistoricalStationData struct {
+	gorm.Model
+	Uuid        string
+	OpenDataId  string
+	Lat         float64
+	Lon         float64
+	Name        string
+	MaxCapacity int32
+	Occupation  int32
+	IsActive    sql.NullBool
+	Checked     bool
+}
+
+func (s *Station) ToHistoricalStationData() HistoricalStationData {
+	return HistoricalStationData{
+		Uuid:        s.Id,
+		OpenDataId:  s.OpenDataId,
+		Lat:         s.Lat,
+		Lon:         s.Lon,
+		Name:        s.Name,
+		MaxCapacity: s.MaxCapacity,
+		Occupation:  s.Occupation,
+		IsActive:    s.IsActive,
+		Checked:     false, // Assuming it starts unchecked
+	}
 }
 
 func (Outbox) TableName() string {

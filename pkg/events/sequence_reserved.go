@@ -42,7 +42,7 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 	// ec.Channel <- change
 
 	// Set bike to unavailable, set is_reserved to false
-	bike.IsAvailable = sql.NullBool{Bool: false, Valid: true}
+	bike.InUseTimestamp = sql.NullTime{}
 	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
 	database.UpdateBike([]*database.Bike{&bike}, db)
 
@@ -99,7 +99,7 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 
 	// Set bike to available
 	bike.IsAvailable = sql.NullBool{Bool: true, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike}, db)
+	database.UpdateBike([]*database.Bike{&bike})
 
 }
 
