@@ -29,9 +29,8 @@ func main() {
 		Level: logLevel,
 	}))
 	slog.SetDefault(logger)
-	database.Init()
 
-	db := database.GetDb()
+	dbc := database.NewDatabase()
 
 	topics := []kafka.Topic{
 		{ProtoFile: users.File_users_user_registered_proto, PType: &users.UserRegistered{}},
@@ -56,7 +55,7 @@ func main() {
 		Topics: topics,
 	})
 
-	ol := kafka.NewOutboxListener(kc, db, topics)
+	ol := kafka.NewOutboxListener(kc, dbc, topics)
 	ol.Start()
 
 	i := 0
@@ -67,11 +66,11 @@ func main() {
 
 	s := scheduler.NewScheduler()
 
-	CreateUsers(db, kc)
-	s.Schedule(time.Minute*5, func() { opendata.BlueBike(db) })
-	s.Schedule(time.Minute*10, func() { opendata.Donkey(db) })
-	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(db) })
-	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(db) })
+	CreateUsers(dbc.DB, kc)
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey(dbc.DB) })
+	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })
+	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(dbc.DB) })
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
 

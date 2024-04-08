@@ -6,6 +6,8 @@ import (
 	"math/rand/v2"
 	"stage2024/pkg/database"
 	h "stage2024/pkg/helper"
+
+	"gorm.io/gorm"
 )
 
 const chanceAbandoned = 10.1
@@ -13,8 +15,7 @@ const chanceDefect = 10.5
 const chanceImmobilized = 15.0
 const chanceInStorage = 0.5
 
-func startReservedsequence(bike database.Bike, change h.Change) h.Change {
-	db := database.GetDb()
+func startReservedsequence(bike database.Bike, change h.Change, db *gorm.DB) h.Change {
 
 	user := database.User{}
 	db.Order("random()").First(&user)
@@ -26,16 +27,14 @@ func startReservedsequence(bike database.Bike, change h.Change) h.Change {
 	change.User_id = user.Id
 	change.Station_id = station.Id
 
-	go dorestofsequence(bike, change)
+	go dorestofsequence(bike, change, db)
 
 	return change
 
 }
 
-func dorestofsequence(bike database.Bike, change h.Change) {
+func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 	slog.Info("Starting sequence RESERVED", "bike", bike.OpenDataId)
-
-	db := database.GetDb()
 
 	h.RandSleep(60*5, 60)
 
@@ -45,10 +44,10 @@ func dorestofsequence(bike database.Bike, change h.Change) {
 	// Set bike to unavailable, set is_reserved to false
 	bike.IsAvailable = sql.NullBool{Bool: false, Valid: true}
 	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike})
+	database.UpdateBike([]*database.Bike{&bike}, db)
 
 	// Update station occupation
-	pickupStation, err := database.GetStationById(change.Station_id)
+	pickupStation, err := database.GetStationById(change.Station_id, db)
 	h.MaybeDieErr(err)
 	pickupStation.Occupation--
 	database.UpdateStation([]*database.Station{&pickupStation}, db)
@@ -100,7 +99,7 @@ func dorestofsequence(bike database.Bike, change h.Change) {
 
 	// Set bike to available
 	bike.IsAvailable = sql.NullBool{Bool: true, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike})
+	database.UpdateBike([]*database.Bike{&bike}, db)
 
 }
 

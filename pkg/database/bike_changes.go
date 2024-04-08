@@ -8,6 +8,7 @@ import (
 	"stage2024/pkg/protogen/common"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 )
 
 // TODO add events for bike location changes
@@ -17,7 +18,7 @@ func locationchange(bike Bike) error {
 }
 
 // Sends BikeImmobilized event. Needs bike and change.
-func immobilizedChange(bike Bike, change helper.Change) error {
+func immobilizedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//TODO add event for bike mobilized
 	//bike immobilized
 	if change.NewValue == "true" {
@@ -40,10 +41,10 @@ func immobilizedChange(bike Bike, change helper.Change) error {
 }
 
 // Sends BikeAbandoned event. Needs user
-func abandonedChange(bike Bike, change helper.Change) error {
+func abandonedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike abandoned
 	if change.NewValue == "true" {
-		user := user(change)
+		user := user(change, db)
 		slog.Debug("Bike abandoned, sending event...", "bike", bike.OpenDataId)
 		protostruct := &bikes.BikeAbandoned{
 			TimeStamp: timestamppb.Now(),
@@ -85,7 +86,7 @@ func availableChange(bike Bike, change helper.Change) error {
 }
 
 // sends BikeBroughtOut and BikeStored events. Needs bike and change.
-func isInStorageChange(bike Bike, change helper.Change) error {
+func isInStorageChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	if change.NewValue == "false" {
 		slog.Info("Bike brought out, sending event...", "bike", bike.OpenDataId)
 		protostruct := &bikes.BikeDeployed{
@@ -111,11 +112,11 @@ func isInStorageChange(bike Bike, change helper.Change) error {
 }
 
 // Sends BikeReserved event. Needs station and user.
-func reservedChange(bike Bike, change helper.Change) error {
+func reservedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike reserved
 	if change.NewValue == "true" {
 		slog.Debug("Bike reserved, sending event...", "bike", bike.OpenDataId)
-		station, user := stationAndUser(change)
+		station, user := stationAndUser(change, db)
 		protostruct := &bikes.BikeReserved{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.Bike{
@@ -133,10 +134,10 @@ func reservedChange(bike Bike, change helper.Change) error {
 }
 
 // Sends BikeDefectReported event. Needs bike, user and defect.
-func defectChange(bike Bike, change helper.Change) error {
+func defectChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike defect
 	if change.NewValue == "true" {
-		user, defect := userdefect(change)
+		user, defect := userdefect(change, db)
 		slog.Debug("Bike defect, sending event...", "bike", bike.OpenDataId)
 		protostruct := &bikes.BikeDefectReported{
 			TimeStamp: timestamppb.Now(),
@@ -158,10 +159,10 @@ func defectChange(bike Bike, change helper.Change) error {
 	return nil
 }
 
-func pickedUpChange(bike Bike, change helper.Change) error {
+func pickedUpChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike picked up
 	slog.Debug("Bike picked up, sending event...", "bike", bike.OpenDataId)
-	station, user := stationAndUser(change)
+	station, user := stationAndUser(change, db)
 	protostruct := &bikes.BikePickedUp{
 		TimeStamp: timestamppb.Now(),
 		Bike:      bike.IntoId(),
@@ -175,10 +176,10 @@ func pickedUpChange(bike Bike, change helper.Change) error {
 	return nil
 }
 
-func returnedChange(bike Bike, change helper.Change) error {
+func returnedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike returned
 	slog.Debug("Bike returned, sending event...", "bike", bike.OpenDataId)
-	station, user := stationAndUser(change)
+	station, user := stationAndUser(change, db)
 	protostruct := &bikes.BikeReturned{
 		TimeStamp: timestamppb.Now(),
 		Bike:      bike.IntoId(),
@@ -192,24 +193,24 @@ func returnedChange(bike Bike, change helper.Change) error {
 }
 
 // checks if station and user are present and returns them
-func stationAndUser(change helper.Change) (Station, User) {
-	station, err := GetStationById(change.Station_id)
+func stationAndUser(change helper.Change, db *gorm.DB) (Station, User) {
+	station, err := GetStationById(change.Station_id, db)
 	helper.MaybeDieErr(err)
-	user, err := GetUserById(change.User_id)
+	user, err := GetUserById(change.User_id, db)
 	helper.MaybeDieErr(err)
 	return station, user
 }
 
 // checks if user is present and returns it
-func user(change helper.Change) User {
-	user, err := GetUserById(change.User_id)
+func user(change helper.Change, db *gorm.DB) User {
+	user, err := GetUserById(change.User_id, db)
 	helper.MaybeDieErr(err)
 	return user
 }
 
 // checks if user and defect are present and returns them
-func userdefect(change helper.Change) (User, string) {
-	user, err := GetUserById(change.User_id)
+func userdefect(change helper.Change, db *gorm.DB) (User, string) {
+	user, err := GetUserById(change.User_id, db)
 	helper.MaybeDieErr(err)
 	if change.Defect == "" {
 		helper.Die(fmt.Errorf("defect change detected, but no defect was given. defect=%v", change.Defect))

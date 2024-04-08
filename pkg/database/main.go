@@ -15,9 +15,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var db *gorm.DB
+type DatabaseClient struct {
+	DB *gorm.DB
+}
 
-func Init() {
+func NewDatabase() *DatabaseClient {
 
 	DbUser := os.Getenv("DB_USER")
 	DbPassword := os.Getenv("DB_PASSWORD")
@@ -30,24 +32,22 @@ func Init() {
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 
-	database, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
 		helper.MaybeDieErr(err)
 	}
-	db = database
 
 	slog.Info("Migrating database")
 	err = db.AutoMigrate(&User{}, &Bike{}, &Station{}, &Outbox{})
 	helper.MaybeDieErr(err)
-}
 
-func GetDb() *gorm.DB {
-	return db
+	return &DatabaseClient{
+		DB: db,
+	}
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateBike(records []*Bike) {
-	db := GetDb()
+func UpdateBike(records []*Bike, db *gorm.DB) {
 	for _, record := range records {
 		oldrecord := &Bike{}
 		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
@@ -134,7 +134,7 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 	}
 }
 
-func GetStationById(id string) (Station, error) {
+func GetStationById(id string, db *gorm.DB) (Station, error) {
 	if id == "" {
 		return Station{}, fmt.Errorf("StationId is empty")
 	}
@@ -143,7 +143,7 @@ func GetStationById(id string) (Station, error) {
 	return station, nil
 }
 
-func GetBikeById(id string) (Bike, error) {
+func GetBikeById(id string, db *gorm.DB) (Bike, error) {
 	if id == "" {
 		return Bike{}, fmt.Errorf("BikeId is empty")
 	}
@@ -152,7 +152,7 @@ func GetBikeById(id string) (Bike, error) {
 	return bike, nil
 }
 
-func GetUserById(id string) (User, error) {
+func GetUserById(id string, db *gorm.DB) (User, error) {
 	if id == "" {
 		return User{}, fmt.Errorf("UserId is empty")
 	}

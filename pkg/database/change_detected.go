@@ -12,7 +12,7 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 
 	switch change.Table {
 	case "Bike":
-		err := bikechange(change)
+		err := bikechange(change, db)
 		return err
 	case "Station":
 		err := stationchange(change, db)
@@ -23,7 +23,7 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 
 // Selects right events to send based on change for stations
 func stationchange(change helper.Change, db *gorm.DB) error {
-	station, err := GetStationById(change.Id)
+	station, err := GetStationById(change.Id, db)
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func stationchange(change helper.Change, db *gorm.DB) error {
 }
 
 // Selects right events to send based on change for bikes
-func bikechange(change helper.Change) error {
-	bike, err := GetBikeById(change.Id)
+func bikechange(change helper.Change, db *gorm.DB) error {
+	bike, err := GetBikeById(change.Id, db)
 	helper.MaybeDieErr(err)
 
 	switch change.Column {
@@ -57,10 +57,10 @@ func bikechange(change helper.Change) error {
 		err := locationchange(bike) // TODO, no event for this
 		return err
 	case "IsImmobilized":
-		err := immobilizedChange(bike, change) // generated
+		err := immobilizedChange(bike, change, db) // generated
 		return err
 	case "IsAbandoned":
-		err := abandonedChange(bike, change) // generated
+		err := abandonedChange(bike, change, db) // generated
 		return err
 	case "IsAvailable":
 		//TODO Real event, needs generated station and user
@@ -68,20 +68,20 @@ func bikechange(change helper.Change) error {
 		err := availableChange(bike, change) //real
 		return err
 	case "IsInStorage":
-		err := isInStorageChange(bike, change) // generated
+		err := isInStorageChange(bike, change, db) // generated
 		return err
 	case "IsReserved":
 		//start reserved sequence
-		err := reservedChange(bike, change) //real
+		err := reservedChange(bike, change, db) //real
 		return err
 	case "IsDefect":
-		err := defectChange(bike, change) //generated
+		err := defectChange(bike, change, db) //generated
 		return err
 	case "PickedUp":
-		err := pickedUpChange(bike, change)
+		err := pickedUpChange(bike, change, db)
 		return err
 	case "Returned":
-		err := returnedChange(bike, change)
+		err := returnedChange(bike, change, db)
 		return err
 	}
 	return nil

@@ -11,12 +11,12 @@ import (
 
 type OutboxListener struct {
 	kc       *KafkaClient
-	db       *gorm.DB
+	db       *database.DatabaseClient
 	topicMap map[string]protoreflect.ProtoMessage
 	queue    chan database.Outbox
 }
 
-func NewOutboxListener(kc *KafkaClient, db *gorm.DB, topics []Topic) *OutboxListener {
+func NewOutboxListener(kc *KafkaClient, db *database.DatabaseClient, topics []Topic) *OutboxListener {
 	tm := map[string]protoreflect.ProtoMessage{}
 	for _, topic := range topics {
 		tm[topic.getName("")] = topic.PType
@@ -36,7 +36,7 @@ func (ol *OutboxListener) Start() {
 
 func (ol *OutboxListener) listen() {
 	for o := range ol.queue {
-		err := ol.db.Transaction(func(tx *gorm.DB) error {
+		err := ol.db.DB.Transaction(func(tx *gorm.DB) error {
 			err := tx.Delete(&o).Error
 			if err != nil {
 				return err
@@ -62,7 +62,7 @@ func (ol *OutboxListener) listen() {
 // Pulls outbox record out of database and puts them on the consume queue.
 func (ol *OutboxListener) FetchOutboxData() {
 	rows := []database.Outbox{}
-	result := ol.db.Order("created_at desc").Find(&rows)
+	result := ol.db.DB.Order("created_at desc").Find(&rows)
 	if result.Error != nil {
 		slog.Warn("Failed to fetch Outbox data", "error", result.Error)
 	}

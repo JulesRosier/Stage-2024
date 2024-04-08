@@ -14,10 +14,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func RunSequence(kc *kafka.KafkaClient) {
+func RunSequence(kc *kafka.KafkaClient, dbc *database.DatabaseClient) {
 	slog.Info("Starting sequence")
 	defer slog.Info("Sequence done")
-	db := database.GetDb()
+	db := dbc.DB
 
 	user := database.User{}
 	db.Order("random()").Find(&user)
