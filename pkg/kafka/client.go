@@ -14,7 +14,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sr"
 )
 
-type Client struct {
+type KafkaClient struct {
 	Kcl    *kgo.Client
 	Rcl    *sr.Client
 	Serde  *sr.Serde
@@ -24,9 +24,9 @@ type Config struct {
 	Topics []Topic
 }
 
-func NewClient(config Config) *Client {
+func NewClient(config Config) *KafkaClient {
 	rcl := getRepoClient()
-	c := Client{
+	c := KafkaClient{
 		Kcl:    getClient(),
 		Rcl:    rcl,
 		Serde:  getSerde(rcl, config.Topics),
@@ -35,7 +35,7 @@ func NewClient(config Config) *Client {
 	return &c
 }
 
-func (c Client) Produce(item any) error {
+func (c KafkaClient) Produce(item any) error {
 	topic, ok := c.findTopicByType(item)
 	if !ok {
 		return fmt.Errorf("no topic found for type %s", reflect.TypeOf(item))
@@ -54,7 +54,7 @@ func (c Client) Produce(item any) error {
 	return nil
 }
 
-func (c Client) findTopicByType(inputType any) (string, bool) {
+func (c KafkaClient) findTopicByType(inputType any) (string, bool) {
 	// FIXME: could be contant time with hashmap
 	for _, topic := range c.Config.Topics {
 		if reflect.TypeOf(inputType) == reflect.TypeOf(topic.PType) {

@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateRandomUser(db *gorm.DB, kc *kafka.Client) {
+func CreateRandomUser(db *gorm.DB, kc *kafka.KafkaClient) {
 	u := &database.User{
 		Id:           gofakeit.UUID(),
 		UserName:     gofakeit.Username(),

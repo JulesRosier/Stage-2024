@@ -90,7 +90,7 @@ func main() {
 	slog.Info("Exiting... Goodbye!")
 }
 
-func CreateUsers(db *gorm.DB, kc *kafka.Client) {
+func CreateUsers(db *gorm.DB, kc *kafka.KafkaClient) {
 	var userCount int64
 	db.Model(&database.User{}).Count(&userCount)
 

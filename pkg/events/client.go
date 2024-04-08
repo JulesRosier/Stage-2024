@@ -6,11 +6,11 @@ import (
 )
 
 type EventClient struct {
-	Kc      *kafka.Client
+	Kc      *kafka.KafkaClient
 	Channel chan helper.Change
 }
 
-func NewEventClient(kc *kafka.Client) *EventClient {
+func NewEventClient(kc *kafka.KafkaClient) *EventClient {
 
 	return &EventClient{
 		Kc:      kc,

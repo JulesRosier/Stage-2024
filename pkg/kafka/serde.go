@@ -29,7 +29,6 @@ func (t Topic) getName(suffix string) string {
 	} else {
 		return t.Name
 	}
-
 }
 
 func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {

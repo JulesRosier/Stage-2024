@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func RunSequence(kc *kafka.Client) {
+func RunSequence(kc *kafka.KafkaClient) {
 	slog.Info("Starting sequence")
 	defer slog.Info("Sequence done")
 	db := database.GetDb()
