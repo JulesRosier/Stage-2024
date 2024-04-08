@@ -1,9 +1,8 @@
-package events
+package database
 
 import (
 	"fmt"
 	"log/slog"
-	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
@@ -12,17 +11,18 @@ import (
 )
 
 // TODO add events for bike location changes
-func locationchange(bike database.Bike) {
+func locationchange(bike Bike) error {
 	// slog.Info("Bike location changed, sending event...", "bike", bike.OpenDataId)
+	return nil
 }
 
 // Sends BikeImmobilized event. Needs bike and change.
-func (ec EventClient) immobilizedChange(bike database.Bike, change helper.Change) {
+func immobilizedChange(bike Bike, change helper.Change) error {
 	//TODO add event for bike mobilized
 	//bike immobilized
 	if change.NewValue == "true" {
-		slog.Info("Bike immobilized, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeImmobilized{
+		slog.Debug("Bike immobilized, sending event...", "bike", bike.OpenDataId)
+		protostruct := &bikes.BikeImmobilized{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.LocationBike{
 				Bike: bike.IntoId(),
@@ -31,18 +31,21 @@ func (ec EventClient) immobilizedChange(bike database.Bike, change helper.Change
 					Longitude: bike.Lon,
 				},
 			},
-		})
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Sends BikeAbandoned event. Needs user
-func (ec EventClient) abandonedChange(bike database.Bike, change helper.Change) {
+func abandonedChange(bike Bike, change helper.Change) error {
 	//bike abandoned
 	if change.NewValue == "true" {
 		user := user(change)
-		slog.Info("Bike abandoned, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeAbandoned{
+		slog.Debug("Bike abandoned, sending event...", "bike", bike.OpenDataId)
+		protostruct := &bikes.BikeAbandoned{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.AbandonedBike{
 				Bike: bike.IntoId(),
@@ -52,13 +55,16 @@ func (ec EventClient) abandonedChange(bike database.Bike, change helper.Change) 
 				},
 			},
 			User: user.IntoId(),
-		})
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Sends No event???. Needs station and user
-func availableChange(bike database.Bike, change helper.Change) {
+func availableChange(bike Bike, change helper.Change) error {
 	//bike available
 	// if change.NewValue == "true" {
 	// 	slog.Info("Bike available, sending event...", "bike", bike.OpenDataId)
@@ -75,38 +81,42 @@ func availableChange(bike database.Bike, change helper.Change) {
 	// 	})
 	// 	helper.MaybeDieErr(err)
 	// }
+	return nil
 }
 
 // sends BikeBroughtOut and BikeStored events. Needs bike and change.
-func (ec EventClient) isInStorageChange(bike database.Bike, change helper.Change) {
+func isInStorageChange(bike Bike, change helper.Change) error {
 	if change.NewValue == "false" {
 		slog.Info("Bike brought out, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeDeployed{
+		protostruct := &bikes.BikeDeployed{
 			TimeStamp: timestamppb.Now(),
 			Bike:      bike.IntoId(),
-		})
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
+		return nil
 	}
 	if change.NewValue == "true" {
 		slog.Debug("Bike stored, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeStored{
+		protostruct := &bikes.BikeStored{
 			TimeStamp: timestamppb.Now(),
 			Bike:      bike.IntoId(),
-		})
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Sends BikeReserved event. Needs station and user.
-func (ec EventClient) reservedChange(bike database.Bike, change helper.Change) {
+func reservedChange(bike Bike, change helper.Change) error {
 	//bike reserved
 	if change.NewValue == "true" {
-		slog.Info("Bike reserved, sending event...", "bike", bike.OpenDataId)
-
-		//change = ec.startReservedsequence(bike, change)
+		slog.Debug("Bike reserved, sending event...", "bike", bike.OpenDataId)
 		station, user := stationAndUser(change)
-
-		err := ec.Kc.Produce(&bikes.BikeReserved{
+		protostruct := &bikes.BikeReserved{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.Bike{
 				Bike:       bike.IntoId(),
@@ -114,18 +124,21 @@ func (ec EventClient) reservedChange(bike database.Bike, change helper.Change) {
 			},
 			Station: station.IntoId(),
 			User:    user.IntoId(),
-		})
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Sends BikeDefectReported event. Needs bike, user and defect.
-func (ec EventClient) defectChange(bike database.Bike, change helper.Change) {
+func defectChange(bike Bike, change helper.Change) error {
 	//bike defect
 	if change.NewValue == "true" {
 		user, defect := userdefect(change)
-		slog.Info("Bike defect, sending event...", "bike", bike.OpenDataId)
-		err := ec.Kc.Produce(&bikes.BikeDefectReported{
+		slog.Debug("Bike defect, sending event...", "bike", bike.OpenDataId)
+		protostruct := &bikes.BikeDefectReported{
 			TimeStamp: timestamppb.Now(),
 			Bike: &bikes.DefectBike{
 				Bike: bike.IntoId(),
@@ -137,57 +150,66 @@ func (ec EventClient) defectChange(bike database.Bike, change helper.Change) {
 			},
 			User:           user.IntoId(),
 			ReportedDefect: defect,
-		})
-
-		helper.MaybeDieErr(err)
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (ec EventClient) pickedUpChange(bike database.Bike, change helper.Change) {
+func pickedUpChange(bike Bike, change helper.Change) error {
 	//bike picked up
-	slog.Info("Bike picked up, sending event...", "bike", bike.OpenDataId)
+	slog.Debug("Bike picked up, sending event...", "bike", bike.OpenDataId)
 	station, user := stationAndUser(change)
-	err := ec.Kc.Produce(&bikes.BikePickedUp{
+	protostruct := &bikes.BikePickedUp{
 		TimeStamp: timestamppb.Now(),
 		Bike:      bike.IntoId(),
 		Station:   station.IntoId(),
 		User:      user.IntoId(),
-	})
-	helper.MaybeDieErr(err)
+	}
+	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (ec EventClient) returnedChange(bike database.Bike, change helper.Change) {
+func returnedChange(bike Bike, change helper.Change) error {
 	//bike returned
-	slog.Info("Bike returned, sending event...", "bike", bike.OpenDataId)
+	slog.Debug("Bike returned, sending event...", "bike", bike.OpenDataId)
 	station, user := stationAndUser(change)
-	err := ec.Kc.Produce(&bikes.BikeReturned{
+	protostruct := &bikes.BikeReturned{
 		TimeStamp: timestamppb.Now(),
 		Bike:      bike.IntoId(),
 		Station:   station.IntoId(),
 		User:      user.IntoId(),
-	})
-	helper.MaybeDieErr(err)
+	}
+	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+		return err
+	}
+	return nil
 }
 
 // checks if station and user are present and returns them
-func stationAndUser(change helper.Change) (database.Station, database.User) {
-	station, err := database.GetStationById(change.Station_id)
+func stationAndUser(change helper.Change) (Station, User) {
+	station, err := GetStationById(change.Station_id)
 	helper.MaybeDieErr(err)
-	user, err := database.GetUserById(change.User_id)
+	user, err := GetUserById(change.User_id)
 	helper.MaybeDieErr(err)
 	return station, user
 }
 
 // checks if user is present and returns it
-func user(change helper.Change) database.User {
-	user, err := database.GetUserById(change.User_id)
+func user(change helper.Change) User {
+	user, err := GetUserById(change.User_id)
 	helper.MaybeDieErr(err)
 	return user
 }
 
 // checks if user and defect are present and returns them
-func userdefect(change helper.Change) (database.User, string) {
-	user, err := database.GetUserById(change.User_id)
+func userdefect(change helper.Change) (User, string) {
+	user, err := GetUserById(change.User_id)
 	helper.MaybeDieErr(err)
 	if change.Defect == "" {
 		helper.Die(fmt.Errorf("defect change detected, but no defect was given. defect=%v", change.Defect))

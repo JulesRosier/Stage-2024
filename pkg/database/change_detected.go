@@ -12,7 +12,8 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 
 	switch change.Table {
 	case "Bike":
-		// bikechange(change)
+		err := bikechange(change)
+		return err
 	case "Station":
 		err := stationchange(change, db)
 		return err
@@ -23,7 +24,6 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 // Selects right events to send based on change for stations
 func stationchange(change helper.Change, db *gorm.DB) error {
 	station, err := GetStationById(change.Id)
-
 	if err != nil {
 		return err
 	}
@@ -47,35 +47,44 @@ func stationchange(change helper.Change, db *gorm.DB) error {
 	return err
 }
 
-// // Selects right events to send based on change for bikes
-// func bikechange(change helper.Change) {
-// 	bike, err := GetBikeById(change.Id)
-// 	helper.MaybeDieErr(err)
+// Selects right events to send based on change for bikes
+func bikechange(change helper.Change) error {
+	bike, err := GetBikeById(change.Id)
+	helper.MaybeDieErr(err)
 
-// 	switch change.Column {
-// 	case "Lat", "Lon":
-// 		locationchange(bike) // TODO, no event for this
-// 	case "IsImmobilized":
-// 		immobilizedChange(bike, change) // generated
-// 	case "IsAbandoned":
-// 		abandonedChange(bike, change) // generated
-// 	case "IsAvailable":
-// 		//TODO Real event, needs generated station and user
-// 		// what event is this?
-// 		availableChange(bike, change) //real
-// 	case "IsInStorage":
-// 		isInStorageChange(bike, change) // generated
-// 	case "IsReserved":
-// 		//start reserved sequence
-// 		reservedChange(bike, change) //real
-// 	case "IsDefect":
-// 		defectChange(bike, change) //generated
-// 	case "PickedUp":
-// 		pickedUpChange(bike, change)
-// 	case "Returned":
-// 		returnedChange(bike, change)
-// 	}
-
-// }
+	switch change.Column {
+	case "Lat", "Lon":
+		err := locationchange(bike) // TODO, no event for this
+		return err
+	case "IsImmobilized":
+		err := immobilizedChange(bike, change) // generated
+		return err
+	case "IsAbandoned":
+		err := abandonedChange(bike, change) // generated
+		return err
+	case "IsAvailable":
+		//TODO Real event, needs generated station and user
+		// what event is this?
+		err := availableChange(bike, change) //real
+		return err
+	case "IsInStorage":
+		err := isInStorageChange(bike, change) // generated
+		return err
+	case "IsReserved":
+		//start reserved sequence
+		err := reservedChange(bike, change) //real
+		return err
+	case "IsDefect":
+		err := defectChange(bike, change) //generated
+		return err
+	case "PickedUp":
+		err := pickedUpChange(bike, change)
+		return err
+	case "Returned":
+		err := returnedChange(bike, change)
+		return err
+	}
+	return nil
+}
 
 //generated values for IsImmobilized, IsAbandoned, IsInStorage, IsDefect

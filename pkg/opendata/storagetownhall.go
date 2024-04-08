@@ -10,9 +10,10 @@ import (
 	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func StorageTownHall() {
+func StorageTownHall(db *gorm.DB) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
 	model := "StorageTownHall"
 
@@ -52,7 +53,7 @@ func StorageTownHall() {
 			return out
 		},
 	)
-	database.UpdateStation(records)
+	database.UpdateStation(records, db)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

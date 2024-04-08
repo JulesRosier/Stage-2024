@@ -10,9 +10,10 @@ import (
 	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func Donkey() {
+func Donkey(db *gorm.DB) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/donkey-republic-beschikbaarheid-deelfietsen-per-station/records"
 	model := "Donkey"
 
@@ -53,7 +54,7 @@ func Donkey() {
 			return out
 		},
 	)
-	database.UpdateStation(records)
+	database.UpdateStation(records, db)
 
 	stationfull := &database.Station{
 		Id:          "00000000-test-test-test-000000000000",
@@ -65,7 +66,7 @@ func Donkey() {
 		Occupation:  4,
 		IsActive:    sql.NullBool{Bool: false, Valid: true},
 	}
-	database.UpdateStation([]*database.Station{stationfull})
+	database.UpdateStation([]*database.Station{stationfull}, db)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

@@ -68,12 +68,10 @@ func main() {
 	s := scheduler.NewScheduler()
 
 	CreateUsers(db, kc)
-	// s.Schedule(time.Minute*5, func() { opendata.Bolt() })
-	// s.Schedule(time.Minute*10, func() { opendata.Baqme() })
-	s.Schedule(time.Minute*5, func() { opendata.BlueBike() })
-	s.Schedule(time.Minute*10, func() { opendata.Donkey() })
-	s.Schedule(time.Minute*1, func() { opendata.StorageGhent() })
-	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall() })
+	s.Schedule(time.Minute*5, func() { opendata.BlueBike(db) })
+	s.Schedule(time.Minute*10, func() { opendata.Donkey(db) })
+	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(db) })
+	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(db) })
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
 

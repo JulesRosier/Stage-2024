@@ -11,9 +11,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func BlueBike() {
+func BlueBike(db *gorm.DB) {
 	urls := []string{"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-dampoort/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-st-denijslaan/records",
@@ -58,7 +59,7 @@ func BlueBike() {
 				return out
 			},
 		)
-		database.UpdateStation(records)
+		database.UpdateStation(records, db)
 	}
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)

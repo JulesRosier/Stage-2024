@@ -10,9 +10,10 @@ import (
 	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func StorageGhent() {
+func StorageGhent(db *gorm.DB) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezettingen-fietsenstallingen-gent/records"
 	model := "StorageGhent"
 
@@ -51,7 +52,7 @@ func StorageGhent() {
 			return out
 		},
 	)
-	database.UpdateStation(records)
+	database.UpdateStation(records, db)
 
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

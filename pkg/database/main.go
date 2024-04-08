@@ -76,8 +76,7 @@ func UpdateBike(records []*Bike) {
 }
 
 // Updates records in the database and notifies changes through a channel.
-func UpdateStation(records []*Station) {
-	db := GetDb()
+func UpdateStation(records []*Station, db *gorm.DB) {
 
 	for _, record := range records {
 		oldrecord := &Station{}
@@ -162,7 +161,11 @@ func GetUserById(id string) (User, error) {
 	return user, nil
 }
 
-func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, payload []byte, db *gorm.DB) error {
+func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, db *gorm.DB) error {
+	payload, err := proto.Marshal(protostruct)
+	if err != nil {
+		return err
+	}
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
 	return db.Create(&Outbox{EventTimestamp: now.AsTime(), Topic: topic, Payload: payload}).Error
 }

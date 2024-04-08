@@ -51,7 +51,7 @@ func dorestofsequence(bike database.Bike, change h.Change) {
 	pickupStation, err := database.GetStationById(change.Station_id)
 	h.MaybeDieErr(err)
 	pickupStation.Occupation--
-	database.UpdateStation([]*database.Station{&pickupStation})
+	database.UpdateStation([]*database.Station{&pickupStation}, db)
 
 	h.RandSleep(60*5, 60)
 
@@ -96,7 +96,7 @@ func dorestofsequence(bike database.Bike, change h.Change) {
 
 	// Update station occupation
 	returnstation.Occupation++
-	database.UpdateStation([]*database.Station{&returnstation})
+	database.UpdateStation([]*database.Station{&returnstation}, db)
 
 	// Set bike to available
 	bike.IsAvailable = sql.NullBool{Bool: true, Valid: true}
