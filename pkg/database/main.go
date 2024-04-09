@@ -82,9 +82,9 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 		oldrecord := &Station{}
 		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
 
-		if result.RowsAffected == 0 {
-			//start transaction for new station created
-			err := db.Transaction(func(tx *gorm.DB) error {
+		//start transaction
+		err := db.Transaction(func(tx *gorm.DB) error {
+			if result.RowsAffected == 0 {
 
 				if err := db.Create(&record).Error; err != nil {
 					return err
@@ -104,14 +104,9 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 				}
 
 				return nil
-			})
-			if err != nil {
-				slog.Warn("Transaction failed", "error", err)
-			}
 
-		} else {
-			record.Id = oldrecord.Id
-			err := db.Transaction(func(tx *gorm.DB) error {
+			} else {
+				record.Id = oldrecord.Id
 
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -125,11 +120,11 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 				}
 
 				return nil
-			})
-
-			if err != nil {
-				slog.Warn("Transaction failed", "error", err)
 			}
+		})
+
+		if err != nil {
+			slog.Warn("Transaction failed", "error", err)
 		}
 	}
 }
