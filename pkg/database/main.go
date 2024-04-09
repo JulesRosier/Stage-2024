@@ -47,10 +47,10 @@ func NewDatabase() *DatabaseClient {
 }
 
 // updates records in the database and notifies changes through a channel.
-func UpdateBike(records []*Bike, db *gorm.DB) {
+func UpdateBike(records []*Bike, db *gorm.DB, change helper.Change) {
 	for _, record := range records {
 		oldrecord := &Bike{}
-		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
+		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
 
 		// if record does not exist, create it and exit
 		if result.RowsAffected == 0 {
@@ -71,7 +71,7 @@ func UpdateBike(records []*Bike, db *gorm.DB) {
 			UpdateAll: true,
 		}).Create(&record)
 
-		ColumnChange(oldrecord, record, db)
+		ColumnChange(oldrecord, record, db, change)
 	}
 }
 
@@ -115,7 +115,7 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 					return err
 				}
 
-				if err := ColumnChange(oldrecord, record, tx); err != nil {
+				if err := ColumnChange(oldrecord, record, tx, helper.Change{}); err != nil {
 					return err
 				}
 
@@ -166,9 +166,11 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 }
 
 // adds historical station data
-func addHistoricaldata(record *Station, topicname string, db *gorm.DB) error {
+func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32) error {
 	historicaldata := record.ToHistoricalStationData()
 	historicaldata.TopicName = topicname
+	historicaldata.AmountChanged = amountChanged
+	historicaldata.AmountFaked = 0
 	if err := db.Create(&historicaldata).Error; err != nil {
 		return err
 	}

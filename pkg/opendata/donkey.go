@@ -63,7 +63,7 @@ func Donkey(db *gorm.DB) {
 		Lon:         0,
 		Name:        "Station Full",
 		MaxCapacity: 5,
-		Occupation:  4,
+		Occupation:  2,
 		IsActive:    sql.NullBool{Bool: false, Valid: true},
 	}
 	database.UpdateStation([]*database.Station{stationfull}, db)

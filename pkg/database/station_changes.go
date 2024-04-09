@@ -29,11 +29,9 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db); err != nil {
+		if err := addHistoricaldata(record, topic, db, 0); err != nil {
 			return err
 		}
-
-		return nil
 	}
 
 	//station occupation increased
@@ -57,7 +55,7 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db); err != nil {
+		if err := addHistoricaldata(record, topic, db, protostruct.AmountIncreased); err != nil {
 			return err
 		}
 	}
@@ -83,7 +81,7 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db); err != nil {
+		if err := addHistoricaldata(record, topic, db, protostruct.AmountDecreased); err != nil {
 			return err
 		}
 	}
@@ -146,7 +144,7 @@ func created(station Station, change helper.Change, db *gorm.DB) error {
 	record := &Station{}
 	db.Limit(1).Find(&record, "id = ?", change.Id)
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-	if err := addHistoricaldata(record, topic, db); err != nil {
+	if err := addHistoricaldata(record, topic, db, 0); err != nil {
 		return err
 	}
 

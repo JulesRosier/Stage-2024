@@ -11,9 +11,7 @@ import (
 )
 
 // Compares two records and sends changes to a channel
-func ColumnChange(oldrecord any, record any, db *gorm.DB) error {
-
-	change := helper.Change{}
+func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) error {
 
 	if reflect.TypeOf(oldrecord) != reflect.TypeOf(record) {
 		return errors.New("record struct types do not match")

@@ -24,8 +24,8 @@ func startReservedsequence(bike database.Bike, change h.Change, db *gorm.DB) h.C
 	station := database.Station{}
 	db.Where("occupation > ? AND is_active = ?", 0, true).Order("random()").First(&station)
 
-	change.User_id = user.Id
-	change.Station_id = station.Id
+	change.UserId = user.Id
+	change.StationId = station.Id
 
 	go dorestofsequence(bike, change, db)
 
@@ -34,7 +34,7 @@ func startReservedsequence(bike database.Bike, change h.Change, db *gorm.DB) h.C
 }
 
 func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
-	slog.Info("Starting sequence RESERVED", "bike", bike.OpenDataId)
+	slog.Info("Starting sequence RESERVED", "bike", bike.Id)
 
 	h.RandSleep(60*5, 60)
 
@@ -44,10 +44,10 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 	// Set bike to unavailable, set is_reserved to false
 	bike.InUseTimestamp = sql.NullTime{}
 	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike}, db)
+	database.UpdateBike([]*database.Bike{&bike}, db, h.Change{})
 
 	// Update station occupation
-	pickupStation, err := database.GetStationById(change.Station_id, db)
+	pickupStation, err := database.GetStationById(change.StationId, db)
 	h.MaybeDieErr(err)
 	pickupStation.Occupation--
 	database.UpdateStation([]*database.Station{&pickupStation}, db)
@@ -90,7 +90,7 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 	change.Column = "Returned"
 	returnstation := database.Station{}
 	db.Where("occupation < max_capacity AND is_active = ?", true).Order("random()").First(&returnstation)
-	change.Station_id = returnstation.Id
+	change.StationId = returnstation.Id
 	// ec.Channel <- change
 
 	// Update station occupation
@@ -99,7 +99,7 @@ func dorestofsequence(bike database.Bike, change h.Change, db *gorm.DB) {
 
 	// Set bike to available
 	bike.InUseTimestamp = sql.NullTime{}
-	database.UpdateBike([]*database.Bike{&bike}, db)
+	database.UpdateBike([]*database.Bike{&bike}, db, h.Change{})
 
 }
 

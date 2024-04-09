@@ -32,3 +32,12 @@ func RandSleep(mean, stdDev int) {
 	slog.Info("Sleeping", "time", t)
 	time.Sleep(t)
 }
+
+func RandMinutes(mean, stdDev int) time.Duration {
+	t := time.Minute*time.Duration(GenerateNormalDuration(float64(mean), float64(stdDev))) + time.Minute*30
+	if warpSpeed {
+		t = t / 60
+	}
+	slog.Info("random minutes", "time", t)
+	return t
+}

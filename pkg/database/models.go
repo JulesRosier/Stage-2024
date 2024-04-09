@@ -14,11 +14,11 @@ import (
 type Bike struct {
 	gorm.Model
 	Id             string `gorm:"primaryKey"`
-	OpenDataId     string
 	BikeModel      string
 	Lat            float64
 	Lon            float64
 	IsElectric     sql.NullBool
+	PickedUp       sql.NullBool
 	IsImmobilized  sql.NullBool
 	IsAbandoned    sql.NullBool
 	IsInStorage    sql.NullBool
@@ -56,16 +56,24 @@ type Outbox struct {
 
 type HistoricalStationData struct {
 	gorm.Model
-	Uuid        string
-	OpenDataId  string
-	Lat         float64
-	Lon         float64
-	Name        string
-	MaxCapacity int32
-	Occupation  int32
-	IsActive    sql.NullBool
-	TopicName   string
-	Checked     bool
+	Uuid          string
+	OpenDataId    string
+	Lat           float64
+	Lon           float64
+	Name          string
+	MaxCapacity   int32
+	Occupation    int32
+	IsActive      sql.NullBool
+	TopicName     string
+	Checked       bool
+	AmountChanged int32
+	AmountFaked   int32
+}
+
+type BikeGenData struct {
+	EventTime time.Time
+	StationId string
+	UserId    string
 }
 
 func (s *Station) ToHistoricalStationData() HistoricalStationData {
@@ -78,7 +86,7 @@ func (s *Station) ToHistoricalStationData() HistoricalStationData {
 		MaxCapacity: s.MaxCapacity,
 		Occupation:  s.Occupation,
 		IsActive:    s.IsActive,
-		Checked:     false, // Assuming it starts unchecked
+		Checked:     false,
 	}
 }
 

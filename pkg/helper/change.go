@@ -1,5 +1,7 @@
 package helper
 
+import "time"
+
 type Change struct {
 	Table      string
 	Column     string
@@ -8,7 +10,8 @@ type Change struct {
 	OldValue   string
 	NewValue   string
 	//onderstaande drie zijn standaard leeg, enkel bij gegenereerde data ingevuld
-	Station_id string
-	User_id    string
-	Defect     string
+	StationId string
+	UserId    string
+	Defect    string
+	EventTime time.Time
 }

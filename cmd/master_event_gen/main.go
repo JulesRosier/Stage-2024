@@ -20,6 +20,7 @@ import (
 )
 
 const maxUser = 100
+const fakeBikefrequency = 60
 
 func main() {
 	fmt.Println("Starting...")
@@ -58,21 +59,19 @@ func main() {
 	ol := kafka.NewOutboxListener(kc, dbc, topics)
 	ol.Start()
 
-	i := 0
-	for i < 10 {
-		i++
-		//go events.RunSequence(kc)
-	}
-
 	s := scheduler.NewScheduler()
 
 	CreateUsers(dbc.DB, kc)
+
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
 	s.Schedule(time.Minute*10, func() { opendata.Donkey(dbc.DB) })
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })
 	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(dbc.DB) })
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
+
+	//Generate bike events every x minutes
+	s.Schedule(time.Minute*fakeBikefrequency, func() { BikeEventGen(dbc.DB, fakeBikefrequency) })
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
