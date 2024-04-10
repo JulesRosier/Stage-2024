@@ -14,12 +14,8 @@ import (
 	"stage2024/pkg/protogen/users"
 	"stage2024/pkg/scheduler"
 	"time"
-
-	"github.com/brianvoe/gofakeit"
-	"gorm.io/gorm"
 )
 
-const maxUser = 100
 const fakeBikefrequency = 60
 
 func main() {
@@ -61,7 +57,8 @@ func main() {
 
 	s := scheduler.NewScheduler()
 
-	CreateUsers(dbc.DB, kc)
+	database.CreateUsers(dbc.DB)
+	database.CreateBikes(dbc.DB)
 
 	//TODO: Uncomment
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
@@ -82,20 +79,4 @@ func main() {
 	s.Stop()
 
 	slog.Info("Exiting... Goodbye!")
-}
-
-func CreateUsers(db *gorm.DB, kc *kafka.KafkaClient) {
-	var userCount int64
-	db.Model(&database.User{}).Count(&userCount)
-	users := []*database.User{}
-	for userCount < maxUser {
-		users = append(users, &database.User{
-			Id:           gofakeit.UUID(),
-			UserName:     gofakeit.Username(),
-			EmailAddress: gofakeit.Email(),
-		})
-
-		userCount++
-	}
-	database.UpdateUser(users, db)
 }

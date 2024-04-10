@@ -9,12 +9,9 @@ import (
 	"stage2024/pkg/helper"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v7"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-const maxBikes = 333
 const minDuration = time.Minute * 10
 const windowSize = time.Minute * 30
 
@@ -25,7 +22,6 @@ const chanceInStorage = 0.2
 
 // BikeEventGen generates bike events
 func BikeEventGen(db *gorm.DB, frequency int) {
-	createBikes(db)
 	nowUtc := time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")
 
 	decreases := []database.HistoricalStationData{}
@@ -43,9 +39,8 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 
 			//get increase for decrease
 			increase := database.HistoricalStationData{}
-			topicname := "station_occupation_increased"
 			//get all increases between decrease+minDuration and decrease+minDuration+windowSize
-			result := db.Where("event_time_stamp between ? and ? AND topic_name = ? AND amount_changed > amount_faked", decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize), topicname).Order("random()").Limit(1).Find(&increase)
+			result := db.Where("event_time_stamp between ? and ? AND topic_name = 'station_occupation_increased' AND amount_changed > amount_faked", decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize)).Order("random()").Limit(1).Find(&increase)
 			if result.RowsAffected == 0 {
 				slog.Debug("No increase found for decrease", "increase", decrease.OpenDataId)
 				// get bike abandoned/ immobilized events here
@@ -60,34 +55,6 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 
 // TODO: start transaction for amount changed/ amount faked????,
 // TODO: some stations amount changes are negative numbers....
-// Creates 'maxBikes' amount of bikes
-func createBikes(db *gorm.DB) {
-	slog.Debug("Creating bikes...")
-	var bikeCount int64
-	db.Model(&database.Bike{}).Count(&bikeCount)
-	bikes := []*database.Bike{}
-
-	for bikeCount < maxBikes {
-		bikes = append(bikes, &database.Bike{
-			Id:             uuid.New().String(),
-			BikeModel:      bikeBrands[rand.IntN(len(bikeBrands))],
-			Lat:            rand.Float64()*1.0 + 51.0,
-			Lon:            rand.Float64()*0.2 + 3.6,
-			IsElectric:     sql.NullBool{Bool: gofakeit.Bool(), Valid: true},
-			PickedUp:       sql.NullBool{Bool: false, Valid: true},
-			IsImmobilized:  sql.NullBool{Bool: false, Valid: true},
-			IsAbandoned:    sql.NullBool{Bool: false, Valid: true},
-			IsInStorage:    sql.NullBool{Bool: false, Valid: true},
-			IsReserved:     sql.NullBool{Bool: false, Valid: true},
-			IsDefect:       sql.NullBool{Bool: false, Valid: true},
-			IsReturned:     sql.NullBool{Bool: true, Valid: true},
-			InUseTimestamp: sql.NullTime{},
-		})
-
-		bikeCount++
-	}
-	database.UpdateBike(bikes, db, helper.Change{})
-}
 
 // Generates events based on increase and decrease in station occupation
 func generate(db *gorm.DB, increase database.HistoricalStationData, decrease database.HistoricalStationData) {
@@ -237,19 +204,6 @@ func getBikeAndUser(db *gorm.DB, startTimeString string) (database.Bike, databas
 	slog.Info("Bike selected", "bike", bike.Id)
 	slog.Info("User selected", "user", user.Id)
 	return bike, user
-}
-
-var bikeBrands = []string{
-	"Spoke-y Dokey",
-	"Ride-a-licious",
-	"Wheely Good Bikes",
-	"Bike-a-boo",
-	"ZoomZoom Bikes",
-	"Handlebar Hilarity",
-	"Spoke-tacular Rides",
-	"Silly Spokes",
-	"Whimsical Wheels",
-	"Chuckling Chains",
 }
 
 var defects = []string{
