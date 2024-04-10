@@ -46,7 +46,7 @@ func (ol *OutboxListener) listen() {
 			if err != nil {
 				return err
 			}
-			err = ol.kc.Produce(t)
+			err = ol.kc.Produce(t, o.EventTimestamp)
 			if err != nil {
 				return err
 			}

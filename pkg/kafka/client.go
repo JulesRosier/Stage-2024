@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"stage2024/pkg/helper"
 	"strings"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -36,7 +37,7 @@ func NewClient(config Config) *KafkaClient {
 	return &c
 }
 
-func (c KafkaClient) Produce(item any) error {
+func (c KafkaClient) Produce(item any, timeStamp time.Time) error {
 	topic, ok := c.findTopicByType(item)
 	if !ok {
 		return fmt.Errorf("no topic found for type %s", reflect.TypeOf(item))
@@ -45,13 +46,12 @@ func (c KafkaClient) Produce(item any) error {
 	if err != nil {
 		return err
 	}
-	record := &kgo.Record{Topic: topic, Value: itemBytes, Key: []byte(strings.SplitN(topic, "_", 2)[0])}
-	// c.Kcl.Produce(context.Background(), record, func(r *kgo.Record, err error) {
-	// 	if err != nil {
-	// 		slog.Warn("Produce failed", "error", err)
-	// 	}
-	// 	slog.Debug("Produced event", "topic", topic, "offset", r.Offset)
-	// })
+	record := &kgo.Record{
+		Topic:     topic,
+		Value:     itemBytes,
+		Key:       []byte(strings.SplitN(topic, "_", 2)[0]),
+		Timestamp: timeStamp,
+	}
 	rs := c.Kcl.ProduceSync(context.Background(), record)
 	for _, r := range rs {
 		if r.Err != nil {
