@@ -1,5 +1,4 @@
 ---
-version: "3.7"
 name: redpanda
 networks:
   redpanda_network:
