@@ -168,6 +168,20 @@ func returnedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	return nil
 }
 
+func bikeCreated(bike Bike, change helper.Change, db *gorm.DB) error {
+	slog.Debug("Bike created, sending event...", "bike", bike.ID)
+	now := timestamppb.Now()
+	protostruct := &bikes.BikeDeployed{
+		TimeStamp: now,
+		Bike:      bike.IntoId(),
+	}
+
+	if err := createOutboxRecord(now, protostruct, db); err != nil {
+		return err
+	}
+	return nil
+}
+
 // checks if station and user are present and returns them
 func stationAndUser(change helper.Change, db *gorm.DB) (Station, User) {
 	station, err := GetStationById(change.StationId, db)

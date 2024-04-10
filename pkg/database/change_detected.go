@@ -78,6 +78,9 @@ func bikechange(change helper.Change, db *gorm.DB) error {
 	case "IsReturned":
 		err := returnedChange(bike, change, db)
 		return err
+	case "Created":
+		err := bikeCreated(bike, change, db)
+		return err
 	}
 	return nil
 }
