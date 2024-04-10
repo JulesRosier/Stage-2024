@@ -18,12 +18,13 @@ type Bike struct {
 	Lat            float64
 	Lon            float64
 	IsElectric     sql.NullBool
+	IsReserved     sql.NullBool
 	PickedUp       sql.NullBool
+	IsDefect       sql.NullBool
 	IsImmobilized  sql.NullBool
 	IsAbandoned    sql.NullBool
 	IsInStorage    sql.NullBool
-	IsReserved     sql.NullBool
-	IsDefect       sql.NullBool
+	IsReturned     sql.NullBool
 	InUseTimestamp sql.NullTime
 }
 
@@ -56,18 +57,19 @@ type Outbox struct {
 
 type HistoricalStationData struct {
 	gorm.Model
-	Uuid          string
-	OpenDataId    string
-	Lat           float64
-	Lon           float64
-	Name          string
-	MaxCapacity   int32
-	Occupation    int32
-	IsActive      sql.NullBool
-	TopicName     string
-	Checked       bool
-	AmountChanged int32
-	AmountFaked   int32
+	EventTimeStamp time.Time
+	Uuid           string
+	OpenDataId     string
+	Lat            float64
+	Lon            float64
+	Name           string
+	MaxCapacity    int32
+	Occupation     int32
+	IsActive       sql.NullBool
+	TopicName      string
+	Checked        bool
+	AmountChanged  int32
+	AmountFaked    int32
 }
 
 type BikeGenData struct {

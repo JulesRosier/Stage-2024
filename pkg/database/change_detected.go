@@ -17,6 +17,9 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 	case "Station":
 		err := stationchange(change, db)
 		return err
+	case "User":
+		err := userchange(change, db)
+		return err
 	}
 	return nil
 }
@@ -40,7 +43,7 @@ func stationchange(change helper.Change, db *gorm.DB) error {
 		err := activeChange(station, change, db)
 		return err
 	case "Created":
-		err := created(station, change, db)
+		err := createdStation(station, change, db)
 		return err
 	}
 
@@ -72,7 +75,7 @@ func bikechange(change helper.Change, db *gorm.DB) error {
 	case "PickedUp":
 		err := pickedUpChange(bike, change, db)
 		return err
-	case "Returned":
+	case "IsReturned":
 		err := returnedChange(bike, change, db)
 		return err
 	}
@@ -80,3 +83,15 @@ func bikechange(change helper.Change, db *gorm.DB) error {
 }
 
 //generated values for IsImmobilized, IsAbandoned, IsInStorage, IsDefect
+
+func userchange(change helper.Change, db *gorm.DB) error {
+	user, err := GetUserById(change.Id, db)
+	helper.MaybeDieErr(err)
+
+	switch change.Column {
+	case "Created":
+		err := createdUser(user, change, db)
+		return err
+	}
+	return nil
+}

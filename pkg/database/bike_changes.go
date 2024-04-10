@@ -134,33 +134,36 @@ func defectChange(bike Bike, change helper.Change, db *gorm.DB) error {
 
 func pickedUpChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike picked up
-	slog.Debug("Bike picked up, sending event...", "bike", bike.Id)
-	station, user := stationAndUser(change, db)
-	protostruct := &bikes.BikePickedUp{
-		TimeStamp: timestamppb.New(change.EventTime),
-		Bike:      bike.IntoId(),
-		Station:   station.IntoId(),
-		User:      user.IntoId(),
+	if change.NewValue == "true" {
+		slog.Debug("Bike picked up, sending event...", "bike", bike.Id)
+		station, user := stationAndUser(change, db)
+		protostruct := &bikes.BikePickedUp{
+			TimeStamp: timestamppb.New(change.EventTime),
+			Bike:      bike.IntoId(),
+			Station:   station.IntoId(),
+			User:      user.IntoId(),
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
-	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func returnedChange(bike Bike, change helper.Change, db *gorm.DB) error {
 	//bike returned
-	slog.Debug("Bike returned, sending event...", "bike", bike.Id)
-	station, user := stationAndUser(change, db)
-	protostruct := &bikes.BikeReturned{
-		TimeStamp: timestamppb.New(change.EventTime),
-		Bike:      bike.IntoId(),
-		Station:   station.IntoId(),
-		User:      user.IntoId(),
-	}
-	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
-		return err
+	if change.NewValue == "true" {
+		slog.Debug("Bike returned, sending event...", "bike", bike.Id)
+		station, user := stationAndUser(change, db)
+		protostruct := &bikes.BikeReturned{
+			TimeStamp: timestamppb.New(change.EventTime),
+			Bike:      bike.IntoId(),
+			Station:   station.IntoId(),
+			User:      user.IntoId(),
+		}
+		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -46,32 +46,46 @@ func NewDatabase() *DatabaseClient {
 	}
 }
 
-// updates records in the database and notifies changes through a channel.
+// updates records in the database and notifies changes
 func UpdateBike(records []*Bike, db *gorm.DB, change helper.Change) {
 	for _, record := range records {
 		oldrecord := &Bike{}
 		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
 
-		// if record does not exist, create it and exit
-		if result.RowsAffected == 0 {
-			db.Create(&record)
-			continue
+		//start transaction
+		err := db.Transaction(func(tx *gorm.DB) error {
+
+			if result.RowsAffected == 0 {
+				if err := db.Create(&record).Error; err != nil {
+					return err
+				}
+				// send change for created record to function
+				created := helper.Change{
+					Table:  "Bike",
+					Column: "Created",
+					Id:     record.Id,
+				}
+
+				err := ChangeDetected(created, tx)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := tx.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(&record).Error
+				if err != nil {
+					return err
+				}
+				if err := ColumnChange(oldrecord, record, tx, change); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			slog.Warn("Transaction failed", "error", err)
 		}
-
-		// if record exists, change uuid to old uuid and update record
-		// also leave fake data the same
-		record.Id = oldrecord.Id
-		record.IsElectric = oldrecord.IsElectric
-		record.IsImmobilized = oldrecord.IsImmobilized
-		record.IsAbandoned = oldrecord.IsAbandoned
-		record.IsInStorage = oldrecord.IsInStorage
-		record.IsDefect = oldrecord.IsDefect
-
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&record)
-
-		ColumnChange(oldrecord, record, db, change)
 	}
 }
 
@@ -85,7 +99,6 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 		//start transaction
 		err := db.Transaction(func(tx *gorm.DB) error {
 			if result.RowsAffected == 0 {
-
 				if err := db.Create(&record).Error; err != nil {
 					return err
 				}
@@ -102,9 +115,6 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 				if err != nil {
 					return err
 				}
-
-				return nil
-
 			} else {
 				record.Id = oldrecord.Id
 
@@ -118,11 +128,52 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 				if err := ColumnChange(oldrecord, record, tx, helper.Change{}); err != nil {
 					return err
 				}
-
-				return nil
 			}
+			return nil
 		})
 
+		if err != nil {
+			slog.Warn("Transaction failed", "error", err)
+		}
+	}
+}
+
+func UpdateUser(records []*User, db *gorm.DB) {
+	for _, record := range records {
+		oldrecord := &User{}
+		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
+
+		//start transaction
+		err := db.Transaction(func(tx *gorm.DB) error {
+
+			if result.RowsAffected == 0 {
+				if err := db.Create(&record).Error; err != nil {
+					return err
+				}
+				// send change for created record to function
+				created := helper.Change{
+					Table:  "User",
+					Column: "Created",
+					Id:     record.Id,
+				}
+
+				err := ChangeDetected(created, tx)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := tx.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(&record).Error
+				if err != nil {
+					return err
+				}
+				if err := ColumnChange(oldrecord, record, tx, helper.Change{}); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
 		if err != nil {
 			slog.Warn("Transaction failed", "error", err)
 		}
@@ -166,11 +217,12 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 }
 
 // adds historical station data
-func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32) error {
+func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32, eventTimeStamp *timestamppb.Timestamp) error {
 	historicaldata := record.ToHistoricalStationData()
 	historicaldata.TopicName = topicname
 	historicaldata.AmountChanged = amountChanged
 	historicaldata.AmountFaked = 0
+	historicaldata.EventTimeStamp = eventTimeStamp.AsTime()
 	if err := db.Create(&historicaldata).Error; err != nil {
 		return err
 	}

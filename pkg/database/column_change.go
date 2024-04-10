@@ -42,7 +42,7 @@ func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) 
 				change.NewValue = fmt.Sprintf("%v", newv.Field(i))
 			}
 
-			slog.Debug("change", "", change)
+			slog.Debug("change", "Column", change.Column, "id", change.Id)
 
 			if err := ChangeDetected(change, db); err != nil {
 				return err

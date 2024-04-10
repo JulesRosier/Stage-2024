@@ -38,6 +38,5 @@ func RandMinutes(mean, stdDev int) time.Duration {
 	if warpSpeed {
 		t = t / 60
 	}
-	slog.Info("random minutes", "time", t)
 	return t
 }

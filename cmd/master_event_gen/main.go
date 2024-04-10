@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"stage2024/pkg/database"
-	"stage2024/pkg/events"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
 	"stage2024/pkg/opendata"
@@ -16,6 +15,7 @@ import (
 	"stage2024/pkg/scheduler"
 	"time"
 
+	"github.com/brianvoe/gofakeit"
 	"gorm.io/gorm"
 )
 
@@ -63,12 +63,13 @@ func main() {
 
 	CreateUsers(dbc.DB, kc)
 
+	//TODO: Uncomment
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
 	s.Schedule(time.Minute*10, func() { opendata.Donkey(dbc.DB) })
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })
 	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(dbc.DB) })
 
-	s.Schedule(time.Second*30, ol.FetchOutboxData)
+	// s.Schedule(time.Second*10, ol.FetchOutboxData)
 
 	//Generate bike events every x minutes
 	s.Schedule(time.Minute*fakeBikefrequency, func() { BikeEventGen(dbc.DB, fakeBikefrequency) })
@@ -86,9 +87,15 @@ func main() {
 func CreateUsers(db *gorm.DB, kc *kafka.KafkaClient) {
 	var userCount int64
 	db.Model(&database.User{}).Count(&userCount)
-
+	users := []*database.User{}
 	for userCount < maxUser {
-		events.CreateRandomUser(db, kc)
+		users = append(users, &database.User{
+			Id:           gofakeit.UUID(),
+			UserName:     gofakeit.Username(),
+			EmailAddress: gofakeit.Email(),
+		})
+
 		userCount++
 	}
+	database.UpdateUser(users, db)
 }

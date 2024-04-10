@@ -18,44 +18,47 @@ const maxBikes = 333
 const minDuration = time.Minute * 10
 const windowSize = time.Minute * 30
 
+const chanceAbandoned = 0.2
+const chanceDefect = 0.1
+const chanceImmobilized = 0.5
+const chanceInStorage = 0.2
+
 // BikeEventGen generates bike events
 func BikeEventGen(db *gorm.DB, frequency int) {
 	createBikes(db)
 	nowUtc := time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")
 
-	topicname := "station_occupation_decreased"
-
 	decreases := []database.HistoricalStationData{}
 	//get all unchecked decreases in the last ... minutes
-	db.Where("extract(epoch from ? - created_at)/60 <= ? and topic_name = ? and amount_changed > amount_faked", nowUtc, frequency+20, topicname).Order("updated_at asc").Find(&decreases)
+	db.Where("extract(epoch from ? - event_time_stamp)/60 <= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, frequency+20).Order("updated_at asc").Limit(1).Find(&decreases)
 
 	for _, decrease := range decreases {
 		increase := database.HistoricalStationData{}
 		topicname := "station_occupation_increased"
 		//get all increases between decrease+minDuration and decrease+minDuration+windowSize
-		result := db.Where("created_at between ? and ? and topic_name = ? and amount_changed > amount_faked", decrease.CreatedAt.Add(minDuration), decrease.CreatedAt.Add(minDuration+windowSize), topicname).Order("random()").Limit(1).Find(&increase)
+		result := db.Where("event_time_stamp between ? and ? and topic_name = ? and amount_changed > amount_faked", decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize), topicname).Order("random()").Limit(1).Find(&increase)
 		if result.RowsAffected == 0 {
 			slog.Info("No increase found for decrease", "increase", decrease.OpenDataId)
+			//maybe get bike abandoned/ immobilized events here?
+			generateNotReturned(db, decrease)
 			break
 		}
-		// TODO: generate amount of sequences for amount decreased
-		//TODO: check if increase station has multiple increases, alhoewel dat boeit hier eigenlijk niet, als er dan wordt
-		//TODO: vragen aan Jules om timestamp op redpanda zelf te veranderen naar timestamp van event
-		//gekeken naar de volgende decrease, dan is dat gewoon een andere increase waarbij die station opniew kan worden gebruikt
+		// TODO: generate amount of sequences for amount decreased/increased
 		// en de aantal fakes erin wordt bijgehouden dus ideaal
 		// start sequence with decrease
 		generate(db, increase, decrease)
 	}
 }
 
-// Creates const maxBikes amount of bikes
+// Creates 'maxBikes' amount of bikes
 func createBikes(db *gorm.DB) {
 	slog.Debug("Creating bikes...")
 	var bikeCount int64
 	db.Model(&database.Bike{}).Count(&bikeCount)
+	bikes := []*database.Bike{}
 
 	for bikeCount < maxBikes {
-		bike := &database.Bike{
+		bikes = append(bikes, &database.Bike{
 			Id:             uuid.New().String(),
 			BikeModel:      bikeBrands[rand.IntN(len(bikeBrands))],
 			Lat:            rand.Float64()*1.0 + 51.0,
@@ -67,25 +70,146 @@ func createBikes(db *gorm.DB) {
 			IsInStorage:    sql.NullBool{Bool: false, Valid: true},
 			IsReserved:     sql.NullBool{Bool: false, Valid: true},
 			IsDefect:       sql.NullBool{Bool: false, Valid: true},
+			IsReturned:     sql.NullBool{Bool: true, Valid: true},
 			InUseTimestamp: sql.NullTime{},
-		}
-		db.Create(bike)
+		})
+
 		bikeCount++
 	}
+	database.UpdateBike(bikes, db, helper.Change{})
 }
 
 // Generates events based on increase and decrease in station occupation
 func generate(db *gorm.DB, increase database.HistoricalStationData, decrease database.HistoricalStationData) {
-	slog.Info("Generating event sequence", "increase", increase.OpenDataId)
+	slog.Info("Generating event sequence", "station", decrease.OpenDataId)
 
+	// number of minutes bike is reserved before it is picked up
 	startoffset := helper.RandMinutes(60*5, 60)
-	startTime := decrease.CreatedAt.Add(-startoffset).UTC()
-	startTimeString := startTime.Format("2006-01-02 15:04:05.999999-07")
-	endTime := increase.CreatedAt.UTC()
 
+	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
+	startTimeString := startTime.Format("2006-01-02 15:04:05.999999-07")
+	endTime := increase.EventTimeStamp.UTC()
+	delta := startTime.Sub(endTime)
+
+	bike, user := getBikeAndUser(db, startTimeString)
+
+	// before station capacity decrease
+	// bike reserved
+	user.IsAvailableTimestamp = sql.NullTime{Time: endTime, Valid: true}
+	bike.InUseTimestamp = sql.NullTime{Time: endTime, Valid: true}
+	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
+
+	change := helper.Change{
+		EventTime: startTime,
+		StationId: decrease.Uuid,
+		UserId:    user.Id,
+	}
+	database.UpdateBike([]*database.Bike{&bike}, db, change)
+	database.UpdateUser([]*database.User{&user}, db)
+
+	// same time as capacity decrease
+	// bike picked up
+	change.EventTime = decrease.EventTimeStamp.UTC()
+	bike.PickedUp = sql.NullBool{Bool: true, Valid: true}
+	bike.IsReturned = sql.NullBool{Bool: false, Valid: true}
+	database.UpdateBike([]*database.Bike{&bike}, db, change)
+
+	// after capacity decrease
+	minutes := rand.Float64() * delta.Minutes()
+	slog.Info("Minutes", "minutes", minutes)
+
+	// chance bike defect
+	if rand.Float32() < chanceDefect {
+		change.EventTime = startTime.Add(time.Minute * time.Duration(minutes))
+		change.Defect = defects[rand.IntN(len(defects))]
+		bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
+		database.UpdateBike([]*database.Bike{&bike}, db, change)
+	}
+
+	// same time as capacity increase
+	// bike returned
+
+	bike.PickedUp = sql.NullBool{Bool: false, Valid: true}
+	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+	bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
+	change.StationId = increase.Uuid
+	change.EventTime = endTime
+
+	database.UpdateBike([]*database.Bike{&bike}, db, change)
+	slog.Info("Event sequence generated", "decrease", decrease.OpenDataId)
+
+}
+
+func generateNotReturned(db *gorm.DB, decrease database.HistoricalStationData) {
+	slog.Info("Generating NOT returned event sequence", "decrease", decrease.OpenDataId)
+
+	// number of minutes bike is reserved before it is picked up
+	startoffset := helper.RandMinutes(60*5, 60)
+
+	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
+	startTimeString := startTime.Format("2006-01-02 15:04:05.999999-07")
+	pickedUpTime := decrease.EventTimeStamp.UTC()
+	defectTime := pickedUpTime.Add(helper.RandMinutes(60*5, 60)).UTC()
+	immobilizedTime := defectTime.Add(helper.RandMinutes(2*5, 2)).UTC()
+	inStorageTime := immobilizedTime.Add(helper.RandMinutes(2*5, 2)).UTC()
+	endTime := inStorageTime.Add(helper.RandMinutes(60*5, 60)).UTC()
+
+	bike, user := getBikeAndUser(db, startTimeString)
+
+	// before station capacity decrease
+	// bike reserved
+	user.IsAvailableTimestamp = sql.NullTime{Time: endTime, Valid: true}
+	bike.InUseTimestamp = sql.NullTime{Time: endTime, Valid: true}
+	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
+
+	change := helper.Change{
+		EventTime: startTime,
+		StationId: decrease.Uuid,
+		UserId:    user.Id,
+	}
+	database.UpdateBike([]*database.Bike{&bike}, db, change)
+	database.UpdateUser([]*database.User{&user}, db)
+
+	// same time as capacity decrease
+	// bike picked up
+	change.EventTime = pickedUpTime
+	bike.PickedUp = sql.NullBool{Bool: true, Valid: true}
+	bike.IsReturned = sql.NullBool{Bool: false, Valid: true}
+	database.UpdateBike([]*database.Bike{&bike}, db, change)
+
+	// chance bike abandoned
+	if rand.Float32() < chanceAbandoned {
+		change.EventTime = endTime
+		bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
+		bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+		database.UpdateBike([]*database.Bike{&bike}, db, change)
+		return
+	} else { // bike defect
+		change.EventTime = defectTime
+		change.Defect = defects[rand.IntN(len(defects))]
+		bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
+		bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+		database.UpdateBike([]*database.Bike{&bike}, db, change)
+
+		// chance bike immobilized
+		if rand.Float32() < chanceImmobilized {
+			change.EventTime = immobilizedTime
+			bike.IsImmobilized = sql.NullBool{Bool: true, Valid: true}
+			database.UpdateBike([]*database.Bike{&bike}, db, change)
+		}
+		// chance bike in storage
+		if rand.Float32() < chanceInStorage {
+			change.EventTime = inStorageTime
+			bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
+			database.UpdateBike([]*database.Bike{&bike}, db, change)
+		}
+	}
+}
+
+func getBikeAndUser(db *gorm.DB, startTimeString string) (database.Bike, database.User) {
 	//get available bike not in use
 	bike := database.Bike{}
-	result := db.Where("is_reserved = false AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0", startTimeString).Order("random()").Limit(1).Find(&bike)
+	result := db.Where("is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0", startTimeString).Order("random()").Limit(1).Find(&bike)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available bike found")
 		helper.Die(fmt.Errorf("no available bike found"))
@@ -100,36 +224,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 	slog.Info("Bike selected", "bike", bike.Id)
 	slog.Info("User selected", "user", user.Id)
-
-	// before station capacity decrease
-	//bike reserved
-	// Need to find a way to update the bike, but change the timestamp in the event...
-	// option: change updateBike to take a timestamp to send to event..
-	bike.InUseTimestamp = sql.NullTime{Time: endTime, Valid: true}
-	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
-
-	change := helper.Change{
-		EventTime: startTime,
-		StationId: increase.Uuid,
-		UserId:    user.Id,
-	}
-	database.UpdateBike([]*database.Bike{&bike}, db, change)
-
-	// same time as capacity decrease
-	// bike picked up
-	change.EventTime = decrease.CreatedAt.UTC()
-	bike.PickedUp = sql.NullBool{Bool: true, Valid: true}
-	database.UpdateBike([]*database.Bike{&bike}, db, change)
-
-	// after capacity decrease
-	// chance bike abandoned
-	// chance bike defect
-	// chance bike immobilized
-	// chance bike in storage
-
-	// same time as capacity increase
-	// bike dropped off
-
+	return bike, user
 }
 
 var bikeBrands = []string{
@@ -145,6 +240,25 @@ var bikeBrands = []string{
 	"Chuckling Chains",
 }
 
-//TODO dingen die niet werken in ui, zelfde event als twee verschillende, met andere structuren, ligt het aan mij?
-// station id : b510863b-e6e1-4edd-a4cb-28995e1ed455
-// bike_id : ec502b37-5fa3-4c10-ab86-97ba2b763b52
+var defects = []string{
+	"Flat tire",
+	"Broken chain",
+	"Worn brake pads",
+	"Loose spokes",
+	"Faulty gear shifting",
+	"Bent wheel rim",
+	"Damaged pedals",
+	"Cracked frame",
+	"Stuck brakes",
+	"Rusted components",
+	"Misaligned wheels",
+	"Broken saddle",
+	"Malfunctioning gears",
+	"Wobbly handlebars",
+	"Loose headset",
+	"Torn seat cover",
+	"Defective bearings",
+	"Faulty brakes",
+	"Cracked fork",
+	"Damaged crankset",
+}

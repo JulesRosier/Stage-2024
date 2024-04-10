@@ -29,7 +29,7 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db, 0); err != nil {
+		if err := addHistoricaldata(record, topic, db, 0, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -55,7 +55,7 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db, protostruct.AmountIncreased); err != nil {
+		if err := addHistoricaldata(record, topic, db, protostruct.AmountIncreased, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -81,7 +81,7 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		record := &Station{}
 		db.Limit(1).Find(&record, "id = ?", change.Id)
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricaldata(record, topic, db, protostruct.AmountDecreased); err != nil {
+		if err := addHistoricaldata(record, topic, db, protostruct.AmountDecreased, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -125,7 +125,7 @@ func activeChange(station Station, change helper.Change, db *gorm.DB) error {
 	return nil
 }
 
-func created(station Station, change helper.Change, db *gorm.DB) error {
+func createdStation(station Station, change helper.Change, db *gorm.DB) error {
 	slog.Debug("Station created, sending event...", "station", station.OpenDataId)
 	now := timestamppb.Now()
 	protostruct := &stations.StationCreated{
@@ -144,7 +144,7 @@ func created(station Station, change helper.Change, db *gorm.DB) error {
 	record := &Station{}
 	db.Limit(1).Find(&record, "id = ?", change.Id)
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-	if err := addHistoricaldata(record, topic, db, 0); err != nil {
+	if err := addHistoricaldata(record, topic, db, 0, protostruct.TimeStamp); err != nil {
 		return err
 	}
 
