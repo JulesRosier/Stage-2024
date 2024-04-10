@@ -30,26 +30,36 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 
 	decreases := []database.HistoricalStationData{}
 	//get all unchecked decreases in the last ... minutes
-	db.Where("extract(epoch from ? - event_time_stamp)/60 <= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, frequency+20).Order("updated_at asc").Limit(1).Find(&decreases)
+	db.Where("extract(epoch from ? - event_time_stamp)/60 <= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, frequency+20).Order("updated_at asc").Find(&decreases)
 
 	for _, decrease := range decreases {
-		increase := database.HistoricalStationData{}
-		topicname := "station_occupation_increased"
-		//get all increases between decrease+minDuration and decrease+minDuration+windowSize
-		result := db.Where("event_time_stamp between ? and ? and topic_name = ? and amount_changed > amount_faked", decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize), topicname).Order("random()").Limit(1).Find(&increase)
-		if result.RowsAffected == 0 {
-			slog.Info("No increase found for decrease", "increase", decrease.OpenDataId)
-			//maybe get bike abandoned/ immobilized events here?
-			generateNotReturned(db, decrease)
-			break
-		}
-		// TODO: generate amount of sequences for amount decreased/increased
-		// en de aantal fakes erin wordt bijgehouden dus ideaal
+
+		// generate amount of sequences for amount decreased/increased
 		// start sequence with decrease
-		generate(db, increase, decrease)
+		slog.Debug("Decrease found", "decrease", decrease.OpenDataId)
+		slog.Debug("Amount changed", "amount", decrease.AmountChanged)
+		for range decrease.AmountChanged {
+			decrease.AmountFaked++
+
+			//get increase for decrease
+			increase := database.HistoricalStationData{}
+			topicname := "station_occupation_increased"
+			//get all increases between decrease+minDuration and decrease+minDuration+windowSize
+			result := db.Where("event_time_stamp between ? and ? AND topic_name = ? AND amount_changed > amount_faked", decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize), topicname).Order("random()").Limit(1).Find(&increase)
+			if result.RowsAffected == 0 {
+				slog.Debug("No increase found for decrease", "increase", decrease.OpenDataId)
+				// get bike abandoned/ immobilized events here
+				generateNotReturned(db, decrease)
+				break
+			}
+			increase.AmountFaked++
+			generate(db, increase, decrease)
+		}
 	}
 }
 
+// TODO: start transaction for amount changed/ amount faked????,
+// TODO: some stations amount changes are negative numbers....
 // Creates 'maxBikes' amount of bikes
 func createBikes(db *gorm.DB) {
 	slog.Debug("Creating bikes...")
@@ -116,7 +126,6 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 	// after capacity decrease
 	minutes := rand.Float64() * delta.Minutes()
-	slog.Info("Minutes", "minutes", minutes)
 
 	// chance bike defect
 	if rand.Float32() < chanceDefect {
@@ -136,8 +145,9 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	change.EventTime = endTime
 
 	database.UpdateBike([]*database.Bike{&bike}, db, change)
-	slog.Info("Event sequence generated", "decrease", decrease.OpenDataId)
 
+	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
+	db.Model(&increase).Update("amount_faked", increase.AmountFaked)
 }
 
 func generateNotReturned(db *gorm.DB, decrease database.HistoricalStationData) {
@@ -176,6 +186,8 @@ func generateNotReturned(db *gorm.DB, decrease database.HistoricalStationData) {
 	bike.PickedUp = sql.NullBool{Bool: true, Valid: true}
 	bike.IsReturned = sql.NullBool{Bool: false, Valid: true}
 	database.UpdateBike([]*database.Bike{&bike}, db, change)
+
+	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
 
 	// chance bike abandoned
 	if rand.Float32() < chanceAbandoned {
