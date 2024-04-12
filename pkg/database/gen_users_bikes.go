@@ -13,7 +13,7 @@ import (
 )
 
 const maxUsers = 200
-const maxBikes = 333
+const maxBikes = 444
 
 // Creates 'maxUsers' amount of users
 func CreateUsers(db *gorm.DB) {
@@ -43,7 +43,7 @@ func CreateBikes(db *gorm.DB) {
 		bikes = append(bikes, &Bike{
 			Id:             uuid.New().String(),
 			BikeModel:      bikeBrands[rand.IntN(len(bikeBrands))],
-			Lat:            rand.Float64()*1.0 + 51.0,
+			Lat:            rand.Float64()*0.1 + 51.0,
 			Lon:            rand.Float64()*0.2 + 3.6,
 			IsElectric:     sql.NullBool{Bool: gofakeit.Bool(), Valid: true},
 			PickedUp:       sql.NullBool{Bool: false, Valid: true},

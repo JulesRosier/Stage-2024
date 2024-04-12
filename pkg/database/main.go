@@ -171,8 +171,8 @@ func GetStationById(id string, db *gorm.DB) (Station, error) {
 		return Station{}, fmt.Errorf("StationId is empty")
 	}
 	var station Station
-	db.Where("id = ?", id).First(&station)
-	return station, nil
+	err := db.Where("id = ?", id).First(&station).Error
+	return station, err
 }
 
 func GetBikeById(id string, db *gorm.DB) (Bike, error) {
@@ -180,8 +180,8 @@ func GetBikeById(id string, db *gorm.DB) (Bike, error) {
 		return Bike{}, fmt.Errorf("BikeId is empty")
 	}
 	var bike Bike
-	db.Where("id = ?", id).First(&bike)
-	return bike, nil
+	err := db.Where("id = ?", id).First(&bike).Error
+	return bike, err
 }
 
 func GetUserById(id string, db *gorm.DB) (User, error) {
@@ -189,8 +189,8 @@ func GetUserById(id string, db *gorm.DB) (User, error) {
 		return User{}, fmt.Errorf("UserId is empty")
 	}
 	var user User
-	db.Where("id = ?", id).First(&user)
-	return user, nil
+	err := db.Where("id = ?", id).First(&user).Error
+	return user, err
 }
 
 func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, db *gorm.DB) error {
@@ -209,8 +209,7 @@ func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountCha
 	historicaldata.AmountChanged = amountChanged
 	historicaldata.AmountFaked = 0
 	historicaldata.EventTimeStamp = eventTimeStamp.AsTime()
-	if err := db.Create(&historicaldata).Error; err != nil {
-		return err
-	}
-	return nil
+	err := db.Create(&historicaldata).Error
+
+	return err
 }

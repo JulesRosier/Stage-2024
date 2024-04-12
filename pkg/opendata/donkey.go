@@ -56,17 +56,5 @@ func Donkey(db *gorm.DB) {
 	)
 	database.UpdateStation(records, db)
 
-	// stationfull := &database.Station{
-	// 	Id:          "00000000-test-test-test-000000000000",
-	// 	OpenDataId:  "station-full",
-	// 	Lat:         0,
-	// 	Lon:         0,
-	// 	Name:        "Station Full",
-	// 	MaxCapacity: 5,
-	// 	Occupation:  2,
-	// 	IsActive:    sql.NullBool{Bool: false, Valid: true},
-	// }
-	// database.UpdateStation([]*database.Station{stationfull}, db)
-
 	slog.Debug("Data fetched and processed, waiting...", "model", model)
 }

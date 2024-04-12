@@ -9,7 +9,7 @@ type Change struct {
 	OpenDataId string
 	OldValue   string
 	NewValue   string
-	//onderstaande drie zijn standaard leeg, enkel bij gegenereerde data ingevuld
+
 	StationId string
 	UserId    string
 	Defect    string
