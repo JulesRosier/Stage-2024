@@ -127,7 +127,7 @@ func activeChange(station Station, change helper.Change, db *gorm.DB) error {
 	return nil
 }
 
-func createdStation(station Station, change helper.Change, db *gorm.DB) error {
+func createStationEvent(station *Station, db *gorm.DB) error {
 	slog.Debug("Station created, sending event...", "station", station.OpenDataId)
 	now := timestamppb.Now()
 	protostruct := &stations.StationCreated{
@@ -144,7 +144,7 @@ func createdStation(station Station, change helper.Change, db *gorm.DB) error {
 
 	//add historical data, get record and add topic name
 	record := &Station{}
-	db.Limit(1).Find(&record, "id = ?", change.Id)
+	db.Limit(1).Find(&record, "id = ?", station.Id)
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
 	if err := addHistoricaldata(record, topic, db, 0, protostruct.TimeStamp); err != nil {
 		return err

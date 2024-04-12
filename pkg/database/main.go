@@ -103,16 +103,8 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 					return err
 				}
 
-				// send change for created record to function
-				created := helper.Change{
-					Table:      "Station",
-					Column:     "Created",
-					Id:         record.Id,
-					OpenDataId: record.OpenDataId,
-				}
-
-				err := ChangeDetected(created, tx)
-				if err != nil {
+				// send change for created record to OUtbox
+				if err := createStationEvent(record, tx); err != nil {
 					return err
 				}
 			} else {
@@ -150,14 +142,8 @@ func UpdateUser(records []*User, db *gorm.DB) {
 				if err := db.Create(&record).Error; err != nil {
 					return err
 				}
-				// send change for created record to function
-				created := helper.Change{
-					Table:  "User",
-					Column: "Created",
-					Id:     record.Id,
-				}
-
-				err := ChangeDetected(created, tx)
+				// send change for created record to Otbox
+				err := createUserEvent(*record, tx)
 				if err != nil {
 					return err
 				}
