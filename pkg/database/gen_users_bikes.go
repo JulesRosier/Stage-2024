@@ -13,8 +13,21 @@ import (
 const maxUsers = 200
 const maxBikes = 444
 
+func CreateUsersBikes(db *gorm.DB) {
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := CreateUsers(db); err != nil {
+			return err
+		}
+		if err := CreateBikes(db); err != nil {
+			return err
+		}
+		return nil
+	})
+	helper.MaybeDie(err, "Transaction failed: Error creating users and bikes")
+}
+
 // Creates 'maxUsers' amount of users
-func CreateUsers(db *gorm.DB) {
+func CreateUsers(db *gorm.DB) error {
 	var userCount int64
 	db.Model(&User{}).Count(&userCount)
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -36,11 +49,11 @@ func CreateUsers(db *gorm.DB) {
 		}
 		return nil
 	})
-	helper.MaybeDie(err, "Transaction failed: Error creating users")
+	return err
 }
 
 // Creates 'maxBikes' amount of bikes
-func CreateBikes(db *gorm.DB) {
+func CreateBikes(db *gorm.DB) error {
 	var bikeCount int64
 	db.Model(&Bike{}).Count(&bikeCount)
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -73,7 +86,7 @@ func CreateBikes(db *gorm.DB) {
 		}
 		return nil
 	})
-	helper.MaybeDie(err, "Transaction failed: Error creating bikes")
+	return err
 }
 
 var bikeBrands = []string{

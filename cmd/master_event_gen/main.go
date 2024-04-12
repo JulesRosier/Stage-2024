@@ -57,9 +57,7 @@ func main() {
 
 	s := scheduler.NewScheduler()
 
-	//TODO: Make this happen in a transaction
-	database.CreateUsers(dbc.DB)
-	database.CreateBikes(dbc.DB)
+	database.CreateUsersBikes(dbc.DB)
 
 	//TODO: Uncomment
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
