@@ -11,6 +11,8 @@ import (
 )
 
 func occupationChange(station Station, change helper.Change, db *gorm.DB) error {
+	newValue := helper.StringToInt(change.NewValue)
+	oldValue := helper.StringToInt(change.OldValue)
 	//station full
 	if station.Occupation == station.MaxCapacity {
 		slog.Debug("Station is full, sending event...", "station", station.OpenDataId)
@@ -35,14 +37,14 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 	}
 
 	//station occupation increased
-	if change.NewValue > change.OldValue {
+	if newValue > oldValue {
 		slog.Debug("Station occupation increased, sending event...", "station", station.OpenDataId)
 
 		now := timestamppb.Now()
 		protostruct := &stations.StationOccupationIncreased{
 			TimeStamp:                now,
 			Station:                  station.IntoId(),
-			AmountIncreased:          helper.StringToInt(change.NewValue) - helper.StringToInt(change.OldValue),
+			AmountIncreased:          newValue - oldValue,
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
 		}
@@ -61,14 +63,14 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 	}
 
 	//station occupation decreased
-	if change.NewValue < change.OldValue {
+	if newValue < oldValue {
 		slog.Debug("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
 		now := timestamppb.Now()
 		protostruct := &stations.StationOccupationDecreased{
 			TimeStamp:                now,
 			Station:                  station.IntoId(),
-			AmountDecreased:          (helper.StringToInt(change.OldValue) - helper.StringToInt(change.NewValue)),
+			AmountDecreased:          (oldValue - newValue),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
 		}
