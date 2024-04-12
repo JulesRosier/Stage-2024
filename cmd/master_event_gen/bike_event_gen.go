@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const minDuration = time.Minute * 10
+const minDuration = time.Minute * 5
 const windowSize = time.Minute * 30
 
 const chanceAbandoned = 0.2
@@ -20,14 +20,15 @@ const chanceDefect = 0.1
 const chanceImmobilized = 0.5
 const chanceInStorage = 0.2
 
-// BikeEventGen generates bike events
+// BikeEventGen generates bike events based on station occupation changes in the database for the last 'frequency' +20 minutes
 func BikeEventGen(db *gorm.DB, frequency int) {
+	slog.Info("Generating bike events")
 	nowUtc := time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")
 
 	decreases := []database.HistoricalStationData{}
-	//get all unchecked decreases in the last ... minutes
-	db.Where("extract(epoch from ? - event_time_stamp)/60 <= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, frequency+20).Order("updated_at asc").Find(&decreases)
-
+	//get all unchecked decreases older than minDuration+windowSize
+	db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, (minDuration + windowSize).Minutes()).Order("updated_at asc").Find(&decreases)
+	fmt.Println(len(decreases))
 	for _, decrease := range decreases {
 
 		// generate amount of sequences for amount decreased/increased
@@ -45,20 +46,21 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 				slog.Debug("No increase found for decrease", "increase", decrease.OpenDataId)
 				// get bike abandoned/ immobilized events here
 				generateNotReturned(db, decrease)
-				break
+			} else {
+				increase.AmountFaked++
+				generate(db, increase, decrease)
 			}
-			increase.AmountFaked++
-			generate(db, increase, decrease)
 		}
 	}
 }
 
 // TODO: start transaction for amount changed/ amount faked????,
 // TODO: some stations amount changes are negative numbers....
+// TODO: change architecture to send events to outbox from here
 
 // Generates events based on increase and decrease in station occupation
 func generate(db *gorm.DB, increase database.HistoricalStationData, decrease database.HistoricalStationData) {
-	slog.Info("Generating event sequence", "station", decrease.OpenDataId)
+	slog.Info("Generating event sequence", "station", decrease.OpenDataId, "timestamp", decrease.EventTimeStamp)
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset := helper.RandMinutes(60*5, 60)

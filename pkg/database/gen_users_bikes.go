@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"stage2024/pkg/helper"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
@@ -57,7 +58,7 @@ func CreateBikes(db *gorm.DB) {
 
 		bikeCount++
 	}
-	UpdateBike(bikes, db, helper.Change{})
+	UpdateBike(bikes, db, helper.Change{EventTime: time.Now().Add(-time.Hour * 24)})
 }
 
 var bikeBrands = []string{
