@@ -59,7 +59,6 @@ func main() {
 
 	database.CreateUsersBikes(dbc.DB)
 
-	//TODO: Uncomment
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
 	s.Schedule(time.Minute*10, func() { opendata.Donkey(dbc.DB) })
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })

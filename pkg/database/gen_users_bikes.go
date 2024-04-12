@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxUsers = 200
-const maxBikes = 444
+const maxUsers = 400
+const maxBikes = 600
 
 func CreateUsersBikes(db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
