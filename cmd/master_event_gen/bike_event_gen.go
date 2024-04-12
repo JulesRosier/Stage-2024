@@ -28,7 +28,6 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 	decreases := []database.HistoricalStationData{}
 	//get all unchecked decreases older than minDuration+windowSize
 	db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, (minDuration + windowSize).Minutes()).Order("updated_at asc").Find(&decreases)
-	fmt.Println(len(decreases))
 	for _, decrease := range decreases {
 
 		// generate amount of sequences for amount decreased/increased
@@ -55,7 +54,6 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 }
 
 // TODO: start transaction for amount changed/ amount faked????,
-// TODO: some stations amount changes are negative numbers....
 // TODO: change architecture to send events to outbox from here
 
 // Generates events based on increase and decrease in station occupation
