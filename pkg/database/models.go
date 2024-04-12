@@ -67,7 +67,6 @@ type HistoricalStationData struct {
 	Occupation     int32
 	IsActive       sql.NullBool
 	TopicName      string
-	Checked        bool
 	AmountChanged  int32
 	AmountFaked    int32
 }
@@ -88,7 +87,6 @@ func (s *Station) ToHistoricalStationData() HistoricalStationData {
 		MaxCapacity: s.MaxCapacity,
 		Occupation:  s.Occupation,
 		IsActive:    s.IsActive,
-		Checked:     false,
 	}
 }
 
