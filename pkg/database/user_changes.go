@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func createUserEvent(user User, db *gorm.DB) error {
+func createUserEvent(user *User, db *gorm.DB) error {
 	slog.Debug("User created, sending event...", "station", user.Id)
 	now := timestamppb.Now()
 	protostruct := &users.UserRegistered{

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"log/slog"
 	"stage2024/pkg/helper"
 
 	"gorm.io/gorm"
@@ -12,8 +13,7 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 
 	switch change.Table {
 	case "Bike":
-		err := bikechange(change, db)
-		return err
+		slog.Warn("DEPRECATED, don't send events from db update")
 	case "Station":
 		err := stationchange(change, db)
 		return err
@@ -42,38 +42,4 @@ func stationchange(change helper.Change, db *gorm.DB) error {
 	}
 
 	return err
-}
-
-// Selects right events to send based on change for bikes
-func bikechange(change helper.Change, db *gorm.DB) error {
-	bike, err := GetBikeById(change.Id, db)
-	helper.MaybeDieErr(err)
-
-	switch change.Column {
-	case "IsImmobilized":
-		err := immobilizedChange(bike, change, db)
-		return err
-	case "IsAbandoned":
-		err := abandonedChange(bike, change, db)
-		return err
-	case "IsInStorage":
-		err := isInStorageChange(bike, change, db)
-		return err
-	case "IsReserved":
-		err := reservedChange(bike, change, db)
-		return err
-	case "IsDefect":
-		err := defectChange(bike, change, db)
-		return err
-	case "PickedUp":
-		err := pickedUpChange(bike, change, db)
-		return err
-	case "IsReturned":
-		err := returnedChange(bike, change, db)
-		return err
-	case "Created":
-		err := bikeCreated(bike, change, db)
-		return err
-	}
-	return nil
 }

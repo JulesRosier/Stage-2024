@@ -46,47 +46,15 @@ func NewDatabase() *DatabaseClient {
 	}
 }
 
-// updates records in the database and notifies changes
-func UpdateBike(records []*Bike, db *gorm.DB, change helper.Change) {
-	for _, record := range records {
-		oldrecord := &Bike{}
-		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
-
-		//start transaction
-		err := db.Transaction(func(tx *gorm.DB) error {
-
-			if result.RowsAffected == 0 {
-				if err := db.Create(&record).Error; err != nil {
-					return err
-				}
-				// send change for created record to function
-				created := helper.Change{
-					Table:  "Bike",
-					Column: "Created",
-					Id:     record.Id,
-				}
-
-				err := ChangeDetected(created, tx)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := tx.Clauses(clause.OnConflict{
-					UpdateAll: true,
-				}).Create(&record).Error
-				if err != nil {
-					return err
-				}
-				if err := ColumnChange(oldrecord, record, tx, change); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			slog.Warn("Transaction failed", "error", err)
-		}
+// Updates an existing Bike record in the database
+func UpdateBike(db *gorm.DB, record *Bike) error {
+	err := db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&record).Error
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 // Updates records in the database and sends changed records to function that checks changes
@@ -130,40 +98,14 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 	}
 }
 
-func UpdateUser(records []*User, db *gorm.DB) {
-	for _, record := range records {
-		oldrecord := &User{}
-		result := db.Limit(1).Find(&oldrecord, "id = ?", record.Id)
-
-		//start transaction
-		err := db.Transaction(func(tx *gorm.DB) error {
-
-			if result.RowsAffected == 0 {
-				if err := db.Create(&record).Error; err != nil {
-					return err
-				}
-				// send change for created record to Otbox
-				err := createUserEvent(*record, tx)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := tx.Clauses(clause.OnConflict{
-					UpdateAll: true,
-				}).Create(&record).Error
-				if err != nil {
-					return err
-				}
-				if err := ColumnChange(oldrecord, record, tx, helper.Change{}); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			slog.Warn("Transaction failed", "error", err)
-		}
+func UpdateUser(db *gorm.DB, record *User) error {
+	err := db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&record).Error
+	if err != nil {
+		return err
 	}
+	return nil
 }
 
 func GetStationById(id string, db *gorm.DB) (Station, error) {
