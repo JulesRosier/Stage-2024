@@ -43,7 +43,7 @@ func BikeEventGen(db *gorm.DB, frequency int) {
 				if result.RowsAffected == 0 {
 					slog.Debug("No increase found for decrease", "increase", decrease.OpenDataId)
 					// get bike abandoned/ immobilized events here
-					err := generateNotReturned(db, decrease)
+					err := generateBikeNotReturned(db, decrease)
 					return err
 				} else {
 					increase.AmountFaked++
@@ -64,7 +64,7 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 	stationCreated := database.HistoricalStationData{}
 	err := db.Where("uuid = ? AND topic_name = 'station_created'", decrease.Uuid).Limit(1).Find(&stationCreated).Error
 	if err != nil {
-		slog.Warn("Station not found", "station", decrease.Uuid)
+		slog.Warn("Station not found", "station", decrease.Uuid, "error", err)
 		return 0, err
 	}
 
@@ -152,8 +152,8 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	return nil
 }
 
-func generateNotReturned(db *gorm.DB, decrease database.HistoricalStationData) error {
-	slog.Info("Generating NOT returned event sequence", "decrease", decrease.OpenDataId)
+func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationData) error {
+	slog.Info("Generating event sequence, Bike is not returned", "decrease", decrease.OpenDataId)
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset, err := getStartOffset(db, decrease)
