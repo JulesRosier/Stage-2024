@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"stage2024/pkg/database"
 	"stage2024/pkg/gentopendata"
-	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -38,7 +37,10 @@ func Donkey(db *gorm.DB) {
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Station {
 			err := json.Unmarshal(b, &in)
-			helper.MaybeDieErr(err)
+			if err != nil {
+				slog.Warn("Error unmarshalling data", "error", err)
+				return &database.Station{}
+			}
 
 			out := &database.Station{}
 

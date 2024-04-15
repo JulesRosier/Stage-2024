@@ -2,8 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"log/slog"
 	"math/rand/v2"
-	"stage2024/pkg/helper"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ func CreateUsersBikes(db *gorm.DB) {
 		}
 		return nil
 	})
-	helper.MaybeDie(err, "Transaction failed: Error creating users and bikes")
+	slog.Warn("Transaction failed: Error creating users and bikes", "error", err)
 }
 
 // Creates 'maxUsers' amount of users

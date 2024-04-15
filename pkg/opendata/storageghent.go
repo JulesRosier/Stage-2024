@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"stage2024/pkg/database"
 	"stage2024/pkg/gentopendata"
-	"stage2024/pkg/helper"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -37,7 +36,10 @@ func StorageGhent(db *gorm.DB) {
 			}{}
 
 			err := json.Unmarshal(b, &in)
-			helper.MaybeDieErr(err)
+			if err != nil {
+				slog.Warn("Error unmarshalling data", "error", err)
+				return &database.Station{}
+			}
 
 			out := &database.Station{}
 			out.Id = uuid.New().String()

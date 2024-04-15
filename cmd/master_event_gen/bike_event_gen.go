@@ -65,7 +65,6 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 	err := db.Where("uuid = ? AND topic_name = 'station_created'", decrease.Uuid).Limit(1).Find(&stationCreated).Error
 	if err != nil {
 		slog.Warn("Station not found", "station", decrease.Uuid)
-		helper.Die(err)
 		return 0, err
 	}
 

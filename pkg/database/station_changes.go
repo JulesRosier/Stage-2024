@@ -11,8 +11,15 @@ import (
 )
 
 func occupationChange(station Station, change helper.Change, db *gorm.DB) error {
-	newValue := helper.StringToInt(change.NewValue)
-	oldValue := helper.StringToInt(change.OldValue)
+	newValue, err := helper.StringToInt(change.NewValue)
+	if err != nil {
+		slog.Warn("Error converting string to int", "error", err)
+	}
+	oldValue, err := helper.StringToInt(change.OldValue)
+	if err != nil {
+		slog.Warn("Error converting string to int", "error", err)
+	}
+
 	//station full
 	if station.Occupation == station.MaxCapacity {
 		slog.Debug("Station is full, sending event...", "station", station.OpenDataId)

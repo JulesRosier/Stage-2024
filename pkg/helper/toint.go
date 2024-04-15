@@ -1,12 +1,13 @@
 package helper
 
-import "strconv"
+import (
+	"strconv"
+)
 
-func StringToInt(s string) int32 {
+func StringToInt(s string) (int32, error) {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		DieMsg(err, "unable to convert string to int")
-		return -1
+		return 0, err
 	}
-	return int32(i)
+	return int32(i), nil
 }

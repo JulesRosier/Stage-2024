@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	h "stage2024/pkg/helper"
 )
 
 const maxRequestCount = 100
@@ -28,7 +27,7 @@ func Fetch[T any](url string, f func([]byte) T) []T {
 			allItems = append(allItems, f(x))
 		}
 		if err != nil {
-			h.MaybeDie(err, "Error fetching data")
+			slog.Warn("Error fetching data", "error", err)
 			break
 		}
 		totalCount = data.TotalCount
