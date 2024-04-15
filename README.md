@@ -14,6 +14,6 @@ buf generate
 #### Building
 
 ```sh
-docker build . -t  ghcr.io/julesrosier/stage-2024:latest
+docker build . -t  ghcr.io/julesrosier/stage-2024:latest --build-arg GIT_COMMIT=$(git log -1 --format=%h)
 docker push ghcr.io/julesrosier/stage-2024:latest
 ```
