@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"math/rand/v2"
 	"stage2024/pkg/database"
@@ -243,15 +242,23 @@ func getBikeAndUser(db *gorm.DB, startTimeString string) (database.Bike, databas
 	bike := database.Bike{}
 	result := db.Where("is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0 and extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike)
 	if result.RowsAffected == 0 {
-		slog.Warn("No available bike found")
-		return database.Bike{}, database.User{}, fmt.Errorf("no available bike found")
+		slog.Warn("No available bike found, creating bike")
+		newBike, err := database.CreateBike(db)
+		if err != nil {
+			return database.Bike{}, database.User{}, err
+		}
+		bike = *newBike
 	}
 	// get available user
 	user := database.User{}
 	result = db.Where("is_available_timestamp is null OR extract(epoch from ? - is_available_timestamp)/60 > 0 and extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
-		slog.Warn("No available user found")
-		return database.Bike{}, database.User{}, fmt.Errorf("no available user found")
+		slog.Warn("No available user found, creating user")
+		newUser, err := database.CreateUser(db)
+		if err != nil {
+			return database.Bike{}, database.User{}, err
+		}
+		user = *newUser
 	}
 
 	slog.Info("Bike selected", "bike", bike.Id)
