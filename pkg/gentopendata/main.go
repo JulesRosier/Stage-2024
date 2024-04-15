@@ -58,7 +58,6 @@ func request[T any](url string, offset int) (fetchData, error) {
 	if err != nil {
 		return data, err
 	}
-	// fmt.Println(data)
 	slog.Debug("Request result", "item_count", len(data.Results))
 
 	return data, nil

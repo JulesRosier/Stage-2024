@@ -48,6 +48,7 @@ func NewDatabase() *DatabaseClient {
 
 // Updates an existing Bike record in the database
 func UpdateBike(db *gorm.DB, record *Bike) error {
+	slog.Debug("Updating bike")
 	err := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&record).Error
@@ -59,7 +60,7 @@ func UpdateBike(db *gorm.DB, record *Bike) error {
 
 // Updates records in the database and sends changed records to function that checks changes
 func UpdateStation(records []*Station, db *gorm.DB) {
-
+	slog.Debug("Updating stations")
 	for _, record := range records {
 		oldrecord := &Station{}
 		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
@@ -99,6 +100,7 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 }
 
 func UpdateUser(db *gorm.DB, record *User) error {
+	slog.Debug("Updating user")
 	err := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&record).Error
@@ -136,6 +138,7 @@ func GetUserById(id string, db *gorm.DB) (User, error) {
 }
 
 func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, db *gorm.DB) error {
+	slog.Debug("Creating outbox record")
 	payload, err := proto.Marshal(protostruct)
 	if err != nil {
 		return err
@@ -146,6 +149,7 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 
 // adds historical station data
 func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32, eventTimeStamp *timestamppb.Timestamp) error {
+	slog.Debug("Adding historical data")
 	historicaldata := record.ToHistoricalStationData()
 	historicaldata.TopicName = topicname
 	historicaldata.AmountChanged = amountChanged

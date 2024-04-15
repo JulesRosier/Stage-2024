@@ -60,7 +60,7 @@ func BikeAbandonedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 // sends BikeBroughtOut and BikeStored events. Needs bike and change.
 func BikeInStorageEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 	if change.NewValue == "false" {
-		slog.Info("Bike brought out, sending event...", "bike", bike.Id)
+		slog.Debug("Bike brought out, sending event...", "bike", bike.Id)
 		protostruct := &bikes.BikeDeployed{
 			TimeStamp: timestamppb.New(change.EventTime),
 			Bike:      bike.IntoId(),

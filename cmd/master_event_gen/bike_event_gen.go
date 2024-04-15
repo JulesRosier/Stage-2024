@@ -20,7 +20,7 @@ const chanceInStorage = 0.2
 const format = "2006-01-02 15:04:05.999999-07"
 
 // BikeEventGen generates bike events based on station occupation changes in the database for the last 'frequency' +20 minutes
-func BikeEventGen(db *gorm.DB, frequency int) {
+func BikeEventGen(db *gorm.DB) {
 	slog.Info("Generating bike events")
 	nowUtc := time.Now().UTC().Format(format)
 
@@ -75,13 +75,14 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 	}
 	offset := time.Minute * time.Duration(rand.Float64()*delta.Minutes())
 
-	slog.Info("Start offset", "offset", offset)
+	slog.Debug("Start offset", "offset", offset)
 	return offset, err
 }
 
 // Generates events based on increase and decrease in station occupation
 func generate(db *gorm.DB, increase database.HistoricalStationData, decrease database.HistoricalStationData) error {
 	slog.Info("Generating event sequence", "station", decrease.OpenDataId)
+	slog.Debug("Stations", "increase", increase.OpenDataId, "decrease", decrease.OpenDataId)
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset, err := getStartOffset(db, decrease)
@@ -153,7 +154,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 }
 
 func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationData) error {
-	slog.Info("Generating event sequence, Bike is not returned", "decrease", decrease.OpenDataId)
+	slog.Info("Generating event sequence, Bike is not returned", "station", decrease.OpenDataId)
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset, err := getStartOffset(db, decrease)
@@ -183,6 +184,7 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 		StationId: decrease.Uuid,
 		UserId:    user.Id,
 	}
+
 	// before station capacity decrease
 	// bike reserved
 	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
