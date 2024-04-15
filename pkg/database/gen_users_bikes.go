@@ -23,7 +23,9 @@ func CreateUsersBikes(db *gorm.DB) {
 		}
 		return nil
 	})
-	slog.Warn("Transaction failed: Error creating users and bikes", "error", err)
+	if err != nil {
+		slog.Warn("Transaction failed: Error creating users and bikes", "error", err)
+	}
 }
 
 // Creates 'maxUsers' amount of users
