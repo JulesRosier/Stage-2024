@@ -6,6 +6,7 @@ import (
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/bikes"
 	"stage2024/pkg/protogen/common"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -59,32 +60,35 @@ func BikeAbandonedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 
 // sends BikeBroughtOut and BikeStored events. Needs bike and change.
 func BikeInStorageEvent(bike Bike, change helper.Change, db *gorm.DB) error {
-	if change.NewValue == "false" {
-		slog.Debug("Bike brought out, sending event...", "bike", bike.Id)
-		protostruct := &bikes.BikeDeployed{
-			TimeStamp: timestamppb.New(change.EventTime),
-			Bike:      bike.IntoId(),
-		}
-		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
-			return err
-		}
-		return nil
+	slog.Debug("Bike stored, sending event...", "bike", bike.Id)
+	protostruct := &bikes.BikeStored{
+		TimeStamp: timestamppb.New(change.EventTime),
+		Bike:      bike.IntoId(),
 	}
-	if change.NewValue == "true" {
-		slog.Debug("Bike stored, sending event...", "bike", bike.Id)
-		protostruct := &bikes.BikeStored{
-			TimeStamp: timestamppb.New(change.EventTime),
-			Bike:      bike.IntoId(),
-		}
-		if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
-			return err
-		}
+	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+		return err
 	}
+
 	return nil
 }
 
-// Sends BikeReserved event. Needs station and user.
-func BikeReserved(bike Bike, change helper.Change, db *gorm.DB) error {
+// sends BikeDeployedEvent event
+func BikeDeployedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
+	slog.Debug("Bike brought out, sending event...", "bike", bike.Id)
+	protostruct := &bikes.BikeDeployed{
+		TimeStamp: timestamppb.New(change.EventTime),
+		Bike:      bike.IntoId(),
+	}
+
+	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Sends BikeReservedEvent event. Needs station and user.
+func BikeReservedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 	slog.Debug("Bike reserved, sending event...", "bike", bike.Id)
 	station, user, err := stationAndUser(change, db)
 	if err != nil {
@@ -172,14 +176,13 @@ func BikeReturnedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 	return nil
 }
 
-func BikeCreatedEvent(bike *Bike, db *gorm.DB) error {
+func BikeCreatedEvent(bike *Bike, db *gorm.DB, eventTime time.Time) error {
 	slog.Debug("Bike created, sending event...", "bike", bike.ID)
-	now := timestamppb.Now()
 	protostruct := &bikes.BikeDeployed{
-		TimeStamp: now,
+		TimeStamp: timestamppb.New(eventTime),
 		Bike:      bike.IntoId(),
 	}
-	if err := createOutboxRecord(now, protostruct, db); err != nil {
+	if err := createOutboxRecord(timestamppb.New(eventTime), protostruct, db); err != nil {
 		return err
 	}
 	return nil

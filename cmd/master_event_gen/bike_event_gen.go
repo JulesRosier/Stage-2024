@@ -14,7 +14,7 @@ import (
 const minDuration = time.Minute * 5
 const windowSize = time.Minute * 30
 
-const chanceDefect = 0.1
+const chanceDefect = 0.03
 const chanceImmobilized = 0.5
 const chanceInStorage = 0.2
 const format = "2006-01-02 15:04:05.999999-07"
@@ -26,10 +26,11 @@ func BikeEventGen(db *gorm.DB) {
 
 	decreases := []database.HistoricalStationData{}
 	//get all unchecked decreases older than minDuration+windowSize
-	db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, (minDuration + windowSize).Minutes()).Order("updated_at asc").Find(&decreases)
+	db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked", nowUtc, (minDuration + windowSize).Minutes()).Order("id asc").Find(&decreases)
 	for _, decrease := range decreases {
 
 		// generate amount of sequences for amount decreased/increased
+		//TODO: check for increases that have no decrease
 		// start sequence with decrease
 		for range decrease.AmountChanged {
 			decrease.AmountFaked++
@@ -64,7 +65,7 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 	stationCreated := database.HistoricalStationData{}
 	err := db.Where("uuid = ? AND topic_name = 'station_created'", decrease.Uuid).Limit(1).Find(&stationCreated).Error
 	if err != nil {
-		slog.Warn("Station not found", "station", decrease.Uuid, "error", err)
+		slog.Info("Station not found", "station", decrease.Uuid, "error", err)
 		return 0, err
 	}
 
@@ -91,11 +92,10 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	}
 
 	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
-	startTimeString := startTime.Format(format)
 	endTime := increase.EventTimeStamp.UTC()
 	delta := startTime.Sub(endTime)
 
-	bike, user, err := getBikeAndUser(db, startTimeString)
+	bike, user, err := getBikeAndUser(db, startTime)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	// bike reserved
 	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
 	database.UpdateBike(db, &bike)
-	database.BikeReserved(bike, change, db)
+	database.BikeReservedEvent(bike, change, db)
 
 	// same time as capacity decrease
 	// bike picked up
@@ -169,7 +169,7 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	abandonedTime := immobilizedTime.Add(helper.RandMinutes(2*5, 2)).UTC()
 	endTime := abandonedTime.Add(helper.RandMinutes(60*5, 60)).UTC()
 
-	bike, user, err := getBikeAndUser(db, startTime.Format(format))
+	bike, user, err := getBikeAndUser(db, startTime)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	// bike reserved
 	bike.IsReserved = sql.NullBool{Bool: true, Valid: true}
 	database.UpdateBike(db, &bike)
-	database.BikeReserved(bike, change, db)
+	database.BikeReservedEvent(bike, change, db)
 
 	// same time as capacity decrease
 	// bike picked up
@@ -238,21 +238,23 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	return nil
 }
 
-func getBikeAndUser(db *gorm.DB, startTimeString string) (database.Bike, database.User, error) {
+func getBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, database.User, error) {
+	startTimeString := startTime.Format(format)
 	//get available bike not in use
 	bike := database.Bike{}
-	result := db.Where("is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0 and extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike)
+	result := db.Where("is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available bike found, creating bike")
-		newBike, err := database.CreateBike(db)
+		newBike, err := database.CreateBike(db, startTime.Add(-time.Minute*30))
 		if err != nil {
 			return database.Bike{}, database.User{}, err
 		}
 		bike = *newBike
+		database.BikeCleanUp(db)
 	}
 	// get available user
 	user := database.User{}
-	result = db.Where("is_available_timestamp is null OR extract(epoch from ? - is_available_timestamp)/60 > 0 and extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
+	result = db.Where("is_available_timestamp is null OR extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available user found, creating user")
 		newUser, err := database.CreateUser(db)

@@ -1,11 +1,14 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"os"
 	"reflect"
 	"stage2024/pkg/helper"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/protobuf/proto"
@@ -158,4 +161,35 @@ func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountCha
 	err := db.Create(&historicaldata).Error
 
 	return err
+}
+
+// makes unavailable bikes available again
+func BikeCleanUp(db *gorm.DB) {
+	slog.Info("Cleaning up bikes")
+	bikes := []Bike{}
+	db.Where("(is_defect = true OR is_immobilized = true OR is_abandoned = true OR is_in_storage = true OR is_returned = false) AND in_use_timestamp is not null AND in_use_timestamp IS NOT NULL AND extract(epoch from ? - in_use_timestamp)/60 > 10", time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")).Find(&bikes)
+	for _, bike := range bikes {
+		delta := time.Now().UTC().Sub(bike.InUseTimestamp.Time)
+		offset := time.Minute * time.Duration(rand.Float64()*delta.Minutes())
+		slog.Info("Cleaning up bike", "bike", bike.Id, "delta", delta, "offset", offset)
+
+		change := helper.Change{
+			EventTime: bike.InUseTimestamp.Time.Add(offset),
+		}
+		bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+		bike.PickedUp = sql.NullBool{Bool: false, Valid: true}
+		bike.IsImmobilized = sql.NullBool{Bool: false, Valid: true}
+		bike.IsAbandoned = sql.NullBool{Bool: false, Valid: true}
+		if bike.IsInStorage.Bool {
+			bike.IsInStorage = sql.NullBool{Bool: false, Valid: true}
+			if err := BikeDeployedEvent(bike, change, db); err != nil {
+				slog.Warn("Error sending event", "error", err)
+			}
+		}
+		//TODO: add bike repaired event
+		// don't send event for returned bikes; because no return station
+		bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
+
+		db.Save(&bike)
+	}
 }

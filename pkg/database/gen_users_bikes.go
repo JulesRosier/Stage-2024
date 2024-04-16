@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"log/slog"
 	"math/rand/v2"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-const maxUsers = 400
-const maxBikes = 600
+const maxUsers = 50
+const maxBikes = 50
 
 func CreateUsersBikes(db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -80,7 +81,7 @@ func CreateBikes(db *gorm.DB) error {
 				return err
 			}
 
-			if err := BikeCreatedEvent(bike, db); err != nil {
+			if err := BikeCreatedEvent(bike, db, time.Now()); err != nil {
 				return err
 			}
 
@@ -109,7 +110,7 @@ func CreateUser(db *gorm.DB) (*User, error) {
 }
 
 // creates a single bike
-func CreateBike(db *gorm.DB) (*Bike, error) {
+func CreateBike(db *gorm.DB, createTime time.Time) (*Bike, error) {
 	bike := &Bike{
 		Id:             uuid.New().String(),
 		BikeModel:      bikeBrands[rand.IntN(len(bikeBrands))],
@@ -130,7 +131,8 @@ func CreateBike(db *gorm.DB) (*Bike, error) {
 		return &Bike{}, err
 	}
 
-	if err := BikeCreatedEvent(bike, db); err != nil {
+	slog.Debug("Bike created", "createTime", createTime, "bike", bike.Id)
+	if err := BikeCreatedEvent(bike, db, createTime); err != nil {
 		return &Bike{}, err
 	}
 
