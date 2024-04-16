@@ -50,6 +50,10 @@ func StorageGhent(db *gorm.DB) {
 			out.MaxCapacity = in.Totalplaces
 			out.Occupation = in.Occupiedplaces
 			out.IsActive = sql.NullBool{Bool: true, Valid: true}
+			if in.Facilityname == "Graslei" {
+				out.Lat = 51.053970
+				out.Lon = 3.721184
+			}
 
 			return out
 		},
