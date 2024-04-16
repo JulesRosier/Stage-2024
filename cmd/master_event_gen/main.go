@@ -40,6 +40,7 @@ func main() {
 		{ProtoFile: bikes.File_bikes_bike_reserved_proto, PType: &bikes.BikeReserved{}},
 		{ProtoFile: bikes.File_bikes_bike_returned_proto, PType: &bikes.BikeReturned{}},
 		{ProtoFile: bikes.File_bikes_bike_stored_proto, PType: &bikes.BikeStored{}},
+		{ProtoFile: bikes.File_bikes_bike_repaired_proto, PType: &bikes.BikeRepaired{}},
 
 		{ProtoFile: stations.File_stations_station_occupation_increased_proto, PType: &stations.StationOccupationDecreased{}},
 		{ProtoFile: stations.File_stations_station_full_proto, PType: &stations.StationFull{}},
