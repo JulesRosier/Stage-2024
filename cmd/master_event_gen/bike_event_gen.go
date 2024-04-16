@@ -74,7 +74,13 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 	if delta > windowSize {
 		delta = windowSize
 	}
-	offset := time.Minute * time.Duration(rand.Float64()*delta.Minutes())
+
+	r := rand.Float64()
+	if r == 0 {
+		r = 0.5
+	}
+
+	offset := time.Second * time.Duration(r*delta.Seconds())
 
 	slog.Debug("Start offset", "offset", offset)
 	return offset, err
@@ -93,7 +99,6 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
 	endTime := increase.EventTimeStamp.UTC()
-	delta := startTime.Sub(endTime)
 
 	bike, user, err := getBikeAndUser(db, startTime)
 	if err != nil {
@@ -126,7 +131,12 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	database.BikePickedUpEvent(bike, change, db)
 
 	// after capacity decrease
-	minutes := rand.Float64() * delta.Minutes()
+	delta := decrease.EventTimeStamp.Sub(endTime)
+	r := rand.Float64()
+	if r == 0 {
+		r = 0.5
+	}
+	minutes := r * delta.Minutes()
 
 	// chance bike defect
 	if rand.Float32() < chanceDefect {
@@ -215,22 +225,21 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 			database.UpdateBike(db, &bike)
 			database.BikeImmobilizedEvent(bike, change, db)
 		}
+	}
+	// bike abandoned
+	change.EventTime = abandonedTime
+	bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
+	bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+	database.UpdateBike(db, &bike)
+	database.BikeAbandonedEvent(bike, change, db)
 
-		// bike abandoned
-		change.EventTime = abandonedTime
-		bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
-		bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
+	// chance bike in storage
+	if rand.Float32() < chanceInStorage {
+		change.EventTime = endTime
+		change.NewValue = "true"
+		bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
 		database.UpdateBike(db, &bike)
-		database.BikeAbandonedEvent(bike, change, db)
-
-		// chance bike in storage
-		if rand.Float32() < chanceInStorage {
-			change.EventTime = endTime
-			change.NewValue = "true"
-			bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
-			database.UpdateBike(db, &bike)
-			database.BikeInStorageEvent(bike, change, db)
-		}
+		database.BikeInStorageEvent(bike, change, db)
 	}
 
 	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
@@ -242,19 +251,25 @@ func getBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, database.U
 	startTimeString := startTime.Format(format)
 	//get available bike not in use
 	bike := database.Bike{}
-	result := db.Where("is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true AND in_use_timestamp is null OR extract(epoch from ? - in_use_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike)
-	if result.RowsAffected == 0 {
-		slog.Warn("No available bike found, creating bike")
-		newBike, err := database.CreateBike(db, startTime.Add(-time.Minute*30))
-		if err != nil {
+	if result := db.Where("(is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true) AND (in_use_timestamp is null OR (extract(epoch from ? - in_use_timestamp)/60 > 0) AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike); result.RowsAffected == 0 {
+		// If no bike available, clean up bikes
+		if err := database.BikeCleanUp(db); err != nil {
 			return database.Bike{}, database.User{}, err
 		}
-		bike = *newBike
-		database.BikeCleanUp(db)
+		if result := db.Where("(is_reserved = false AND is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true) AND (in_use_timestamp is null OR (extract(epoch from ? - in_use_timestamp)/60 > 0) AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike); result.RowsAffected == 0 {
+			// If still no bike available, create bike
+			slog.Info("No available bike found, creating bike")
+			newBike, err := database.CreateBike(db, startTime.Add(-time.Minute*30))
+			if err != nil {
+				return database.Bike{}, database.User{}, err
+			}
+			bike = *newBike
+		}
+
 	}
 	// get available user
 	user := database.User{}
-	result = db.Where("is_available_timestamp is null OR extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
+	result := db.Where("is_available_timestamp is null OR (extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available user found, creating user")
 		newUser, err := database.CreateUser(db)
@@ -264,30 +279,38 @@ func getBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, database.U
 		user = *newUser
 	}
 
-	slog.Info("Bike selected", "bike", bike.Id)
-	slog.Info("User selected", "user", user.Id)
+	slog.Info("Bike & User selected", "bike", bike.Id, "user", user.Id)
 	return bike, user, nil
 }
 
 var defects = []string{
-	"Flat tire",
-	"Broken chain",
-	"Worn brake pads",
-	"Loose spokes",
-	"Faulty gear shifting",
-	"Bent wheel rim",
-	"Damaged pedals",
-	"Cracked frame",
-	"Stuck brakes",
-	"Rusted components",
-	"Misaligned wheels",
-	"Broken saddle",
-	"Malfunctioning gears",
-	"Wobbly handlebars",
-	"Loose headset",
-	"Torn seat cover",
-	"Defective bearings",
-	"Faulty brakes",
-	"Cracked fork",
-	"Damaged crankset",
+	"Handlebars are actually spaghetti strands",
+	"Wheels keep trying to escape to join the circus",
+	"Saddle is a whoopee cushion",
+	"Pedals rotate backward, propelling you into the past",
+	"Bell plays 'Jingle Bells' at random intervals",
+	"Chain is made of rubber bands",
+	"Brakes function as accelerators",
+	"Bike frame is held together by duct tape",
+	"Lights only work when the moon is full",
+	"Tires are square",
+	"Bike speaks only in Morse code",
+	"Basket is actually a miniature black hole",
+	"Reflectors emit disco lights",
+	"Kickstand has commitment issues",
+	"Water bottle holder dispenses hot sauce instead",
+	"GPS always directs you to the nearest ice cream parlor",
+	"Bike lock is just a piece of string",
+	"Bells and whistles are literal bells and whistles",
+	"Horn plays 'La Cucaracha' off-key",
+	"Handlebars rotate 360 degrees uncontrollably",
+	"Seat cushion is made of cactus needles",
+	"Pedals detach mid-ride for impromptu dance parties",
+	"Frame is magnetically attracted to garbage cans",
+	"Saddle has a 'kick me' sign taped to it",
+	"Bike basket has a pet rock as a passenger",
+	"Bike chain sings 'The Wheels on the Bus' endlessly",
+	"Gears shift randomly to reverse",
+	"Reflectors reflect sarcastic remarks",
+	"Handlebar grips are actually bananas",
 }

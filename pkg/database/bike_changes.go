@@ -73,10 +73,10 @@ func BikeInStorageEvent(bike Bike, change helper.Change, db *gorm.DB) error {
 }
 
 // sends BikeDeployedEvent event
-func BikeDeployedEvent(bike Bike, change helper.Change, db *gorm.DB) error {
+func BikeDeployedEvent(bike Bike, eventTime time.Time, db *gorm.DB) error {
 	slog.Debug("Bike brought out, sending event...", "bike", bike.Id)
 	protostruct := &bikes.BikeDeployed{
-		TimeStamp: timestamppb.New(change.EventTime),
+		TimeStamp: timestamppb.New(eventTime),
 		Bike:      bike.IntoId(),
 	}
 
@@ -185,6 +185,20 @@ func BikeCreatedEvent(bike *Bike, db *gorm.DB, eventTime time.Time) error {
 	if err := createOutboxRecord(timestamppb.New(eventTime), protostruct, db); err != nil {
 		return err
 	}
+	return nil
+}
+
+// Sends BikeRepaired event. Needs bike and eventTime.
+func BikeRepairedEvent(bike Bike, eventTime time.Time, db *gorm.DB) error {
+	slog.Debug("Bike repaired, sending event...", "bike", bike.Id)
+	protostruct := &bikes.BikeRepaired{
+		TimeStamp: timestamppb.New(eventTime),
+		Bike:      bike.IntoId(),
+	}
+	if err := createOutboxRecord(protostruct.TimeStamp, protostruct, db); err != nil {
+		return err
+	}
+
 	return nil
 }
 
