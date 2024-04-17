@@ -16,6 +16,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 type DatabaseClient struct {
@@ -26,14 +27,31 @@ func NewDatabase() *DatabaseClient {
 
 	DbUser := os.Getenv("DB_USER")
 	DbPassword := os.Getenv("DB_PASSWORD")
-	DbDatabase := os.Getenv("DB_DATABASE_OLTP")
+	DbDatabaseOltp := os.Getenv("DB_DATABASE_OLTP")
+	DbDatabase := os.Getenv("DB_DATABASE")
 	DbHost := os.Getenv("DB_HOST")
 	DbPort := os.Getenv("DB_PORT")
 
 	slog.Info("Starting database", "host", DbHost, "database", DbDatabase)
 
+	// connect to db and create database if it does not exist
+	createconnstr := fmt.Sprintf("user=%s password=%s host=%s port=%s sslmode=disable",
+		DbUser, DbPassword, DbHost, DbPort)
+	dbcreate, err := gorm.Open(postgres.Open(createconnstr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		helper.MaybeDieErr(err)
+	}
+
+	if err := createDb(dbcreate, DbDatabase); err != nil {
+		helper.MaybeDieErr(err)
+	}
+	if err := createDb(dbcreate, DbDatabaseOltp); err != nil {
+		helper.MaybeDieErr(err)
+	}
+
+	// connect to database
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
+		DbUser, DbPassword, DbDatabaseOltp, DbHost, DbPort)
 
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
@@ -47,6 +65,19 @@ func NewDatabase() *DatabaseClient {
 	return &DatabaseClient{
 		DB: db,
 	}
+}
+
+func createDb(db *gorm.DB, name string) error {
+	err := db.Exec("CREATE DATABASE " + name + ";").Error
+	if err != nil {
+		if err.Error() == fmt.Sprintf("ERROR: database \"%s\" already exists (SQLSTATE 42P04)", name) {
+			slog.Info("Database already exists", "database", name)
+			return nil
+		}
+		return err
+	}
+	slog.Info("Database created", "database", name)
+	return nil
 }
 
 // Updates an existing Bike record in the database
