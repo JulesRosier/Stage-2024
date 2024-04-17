@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxUsers = 50
-const maxBikes = 50
+const maxUsers = 10
+const maxBikes = 20
 
 func CreateUsersBikes(db *gorm.DB) {
 	slog.Debug("Creating users and bikes")
@@ -38,7 +38,7 @@ func CreateUsers(db *gorm.DB) error {
 		slog.Debug("Creating users...", "amount", maxUsers-userCount)
 	}
 	for userCount < maxUsers {
-		if _, err := CreateUser(db); err != nil {
+		if _, err := CreateUser(db, time.Now()); err != nil {
 			return err
 		}
 
@@ -65,7 +65,7 @@ func CreateBikes(db *gorm.DB) error {
 }
 
 // creates a single user
-func CreateUser(db *gorm.DB) (*User, error) {
+func CreateUser(db *gorm.DB, createTime time.Time) (*User, error) {
 	user := &User{
 		Id:           gofakeit.UUID(),
 		UserName:     gofakeit.Username(),
@@ -75,7 +75,7 @@ func CreateUser(db *gorm.DB) (*User, error) {
 		return &User{}, err
 	}
 
-	if err := createUserEvent(user, db); err != nil {
+	if err := createUserEvent(user, createTime, db); err != nil {
 		return &User{}, err
 	}
 	return user, nil

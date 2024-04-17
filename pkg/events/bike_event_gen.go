@@ -14,7 +14,7 @@ import (
 
 const minDuration = time.Minute * 5
 
-const windowSize = time.Minute * 10
+const windowSize = time.Minute * 30
 
 const chanceDefect = 0.03
 const chanceDefectNotReturned = 0.5
@@ -93,7 +93,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 	// bike not returned
 	if reflect.ValueOf(increase).IsZero() {
-		slog.Info("Bike not returned", "station", decrease.OpenDataId)
+		slog.Info("Bike not returned", "station", decrease.Name)
 		endTime = fakeEndTime
 		// chance bikedefect
 		if rand.Float32() < chanceDefectNotReturned {
@@ -115,7 +115,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 		db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
 	} else { // bike returned
-		slog.Info("Bike returned", "station", decrease.OpenDataId)
+		slog.Info("Bike returned", "station", decrease.Name)
 		increase.AmountFaked++
 		increaseStation, err := database.GetStationById(increase.Uuid, db)
 		if err != nil {
@@ -204,7 +204,7 @@ func getBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, database.U
 	result := db.Where("is_available_timestamp is null OR (extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available user found, creating user")
-		newUser, err := database.CreateUser(db)
+		newUser, err := database.CreateUser(db, startTime.Add(-time.Minute*30))
 		if err != nil {
 			return database.Bike{}, database.User{}, err
 		}
