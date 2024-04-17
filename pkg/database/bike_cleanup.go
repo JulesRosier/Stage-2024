@@ -16,20 +16,23 @@ func BikeCleanUp(db *gorm.DB) error {
 	bikes := []Bike{}
 	db.Where("(is_defect = true OR is_immobilized = true OR is_abandoned = true OR is_in_storage = true OR is_returned = false) AND in_use_timestamp IS NOT NULL AND extract(epoch from ? - in_use_timestamp)/60 > 0", time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")).Find(&bikes)
 	for _, bike := range bikes {
-
 		eventTime1, eventTime2, eventTime3 := getEventTimes(bike)
 
-		bike.IsDefect = sql.NullBool{Bool: false, Valid: true}
-		bike.IsImmobilized = sql.NullBool{Bool: false, Valid: true}
 		bike.IsAbandoned = sql.NullBool{Bool: false, Valid: true}
+
 		if !bike.IsInStorage.Bool {
 			if err := BikeStoredEvent(bike, eventTime1, db); err != nil {
 				slog.Warn("Error sending event", "error", err)
 			}
 		}
 		bike.IsInStorage = sql.NullBool{Bool: false, Valid: true}
-		if err := BikeRepairedEvent(bike, eventTime2, db); err != nil {
-			slog.Warn("Error sending event", "error", err)
+
+		if bike.IsDefect.Bool || bike.IsImmobilized.Bool {
+			if err := BikeRepairedEvent(bike, eventTime2, db); err != nil {
+				slog.Warn("Error sending event", "error", err)
+			}
+			bike.IsDefect = sql.NullBool{Bool: false, Valid: true}
+			bike.IsImmobilized = sql.NullBool{Bool: false, Valid: true}
 		}
 		if err := BikeDeployedEvent(bike, eventTime3, db); err != nil {
 			return fmt.Errorf("error sending event, error : %v", err)
@@ -37,7 +40,9 @@ func BikeCleanUp(db *gorm.DB) error {
 
 		bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
 
-		db.Save(&bike)
+		if err := db.Save(&bike).Error; err != nil {
+			return err
+		}
 	}
 	return nil
 }
