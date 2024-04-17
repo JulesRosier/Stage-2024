@@ -90,6 +90,14 @@ func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.
 func generate(db *gorm.DB, increase database.HistoricalStationData, decrease database.HistoricalStationData) error {
 	slog.Info("Generating event sequence", "station", decrease.OpenDataId)
 	slog.Debug("Stations", "increase", increase.OpenDataId, "decrease", decrease.OpenDataId)
+	decreaseStation, err := database.GetStationById(decrease.Uuid, db)
+	if err != nil {
+		return err
+	}
+	increaseStation, err := database.GetStationById(increase.Uuid, db)
+	if err != nil {
+		return err
+	}
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset, err := getStartOffset(db, decrease)
@@ -110,22 +118,15 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	database.UpdateBike(db, &bike)
 	database.UpdateUser(db, &user)
 
-	change := helper.Change{
-		EventTime: startTime,
-		StationId: decrease.Uuid,
-		UserId:    user.Id,
-	}
-
 	// before station capacity decrease
 	// bike reserved
-	database.BikeReservedEvent(bike, change, db)
+	database.BikeReservedEvent(bike, startTime, decreaseStation, user, db)
 
 	// same time as capacity decrease
 	// bike picked up
-	change.EventTime = decrease.EventTimeStamp.UTC()
 	bike.IsReturned = sql.NullBool{Bool: false, Valid: true}
 	database.UpdateBike(db, &bike)
-	database.BikePickedUpEvent(bike, change, db)
+	database.BikePickedUpEvent(bike, decrease.EventTimeStamp.UTC(), decreaseStation, user, db)
 
 	// after capacity decrease
 	delta := decrease.EventTimeStamp.Sub(endTime)
@@ -133,25 +134,20 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	if r == 0 {
 		r = 0.5
 	}
-	minutes := r * delta.Minutes()
+	offset := time.Second * time.Duration(r*delta.Seconds())
 
 	// chance bike defect
 	if rand.Float32() < chanceDefect {
-		change.EventTime = startTime.Add(time.Minute * time.Duration(minutes))
-		change.Defect = defects[rand.IntN(len(defects))]
 		bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
 		database.UpdateBike(db, &bike)
-		database.BikeDefectEvent(bike, change, db)
+		database.BikeDefectEvent(bike, startTime.Add(offset), user, defects[rand.IntN(len(defects))], db)
 	}
 
 	// same time as capacity increase
 	// bike returned
 	bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
-	change.StationId = increase.Uuid
-	change.EventTime = endTime
-
 	database.UpdateBike(db, &bike)
-	database.BikeReturnedEvent(bike, change, db)
+	database.BikeReturnedEvent(bike, endTime, increaseStation, user, db)
 
 	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
 	db.Model(&increase).Update("amount_faked", increase.AmountFaked)
@@ -160,6 +156,10 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationData) error {
 	slog.Info("Generating event sequence, Bike is not returned", "station", decrease.OpenDataId)
+	decreaseStation, err := database.GetStationById(decrease.Uuid, db)
+	if err != nil {
+		return err
+	}
 
 	// number of minutes bike is reserved before it is picked up
 	startoffset, err := getStartOffset(db, decrease)
@@ -184,53 +184,40 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	database.UpdateBike(db, &bike)
 	database.UpdateUser(db, &user)
 
-	change := helper.Change{
-		EventTime: startTime,
-		StationId: decrease.Uuid,
-		UserId:    user.Id,
-	}
-
 	// before station capacity decrease
 	// bike reserved
 	database.UpdateBike(db, &bike)
-	database.BikeReservedEvent(bike, change, db)
+	database.BikeReservedEvent(bike, startTime, decreaseStation, user, db)
 
 	// same time as capacity decrease
 	// bike picked up
-	change.EventTime = pickedUpTime
 	bike.IsReturned = sql.NullBool{Bool: false, Valid: true}
 	database.UpdateBike(db, &bike)
-	database.BikePickedUpEvent(bike, change, db)
+	database.BikePickedUpEvent(bike, pickedUpTime, decreaseStation, user, db)
 
 	// chance bikedefect
 	if rand.Float32() < chanceDefect+0.5 {
-		change.EventTime = defectTime
-		change.Defect = defects[rand.IntN(len(defects))]
 		bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
 		database.UpdateBike(db, &bike)
-		database.BikeDefectEvent(bike, change, db)
+		database.BikeDefectEvent(bike, defectTime, user, defects[rand.IntN(len(defects))], db)
 
 		// chance bike immobilized
 		if rand.Float32() < chanceImmobilized {
-			change.EventTime = immobilizedTime
 			bike.IsImmobilized = sql.NullBool{Bool: true, Valid: true}
 			database.UpdateBike(db, &bike)
-			database.BikeImmobilizedEvent(bike, change, db)
+			database.BikeImmobilizedEvent(bike, immobilizedTime, db)
 		}
 	}
 	// bike abandoned
-	change.EventTime = abandonedTime
 	bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
 	database.UpdateBike(db, &bike)
-	database.BikeAbandonedEvent(bike, change, db)
+	database.BikeAbandonedEvent(bike, abandonedTime, user, db)
 
 	// chance bike in storage
 	if rand.Float32() < chanceInStorage {
-		change.EventTime = endTime
-		change.NewValue = "true"
 		bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
 		database.UpdateBike(db, &bike)
-		database.BikeInStorageEvent(bike, change, db)
+		database.BikeStoredEvent(bike, endTime, db)
 	}
 
 	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)

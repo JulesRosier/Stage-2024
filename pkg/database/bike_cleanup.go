@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
-	"stage2024/pkg/helper"
 	"time"
 
 	"gorm.io/gorm"
@@ -20,13 +19,11 @@ func BikeCleanUp(db *gorm.DB) error {
 
 		eventTime1, eventTime2, eventTime3 := getEventTimes(bike)
 
-		change := helper.Change{}
 		bike.IsDefect = sql.NullBool{Bool: false, Valid: true}
 		bike.IsImmobilized = sql.NullBool{Bool: false, Valid: true}
 		bike.IsAbandoned = sql.NullBool{Bool: false, Valid: true}
 		if !bike.IsInStorage.Bool {
-			change.EventTime = eventTime1
-			if err := BikeStoredEvent(bike, change, db); err != nil {
+			if err := BikeStoredEvent(bike, eventTime1, db); err != nil {
 				slog.Warn("Error sending event", "error", err)
 			}
 		}
