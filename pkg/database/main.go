@@ -41,9 +41,9 @@ func NewDatabase() *DatabaseClient {
 	if err != nil {
 		if err.Error() == fmt.Sprintf("ERROR: database \"%s\" already exists (SQLSTATE 42P04)", DbDatabase) {
 			slog.Info("Database already exists", "database", DbDatabase)
-			return nil
+		} else {
+			helper.MaybeDieErr(err)
 		}
-		helper.MaybeDieErr(err)
 	} else {
 		slog.Info("Database created", "database", DbDatabase)
 	}

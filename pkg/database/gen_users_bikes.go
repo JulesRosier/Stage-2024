@@ -15,6 +15,7 @@ const maxUsers = 50
 const maxBikes = 50
 
 func CreateUsersBikes(db *gorm.DB) {
+	slog.Debug("Creating users and bikes")
 	err := db.Transaction(func(tx *gorm.DB) error {
 		if err := CreateUsers(db); err != nil {
 			return err
@@ -33,7 +34,9 @@ func CreateUsersBikes(db *gorm.DB) {
 func CreateUsers(db *gorm.DB) error {
 	var userCount int64
 	db.Model(&User{}).Count(&userCount)
-
+	if userCount < maxUsers {
+		slog.Debug("Creating users...", "amount", maxUsers-userCount)
+	}
 	for userCount < maxUsers {
 		if _, err := CreateUser(db); err != nil {
 			return err
@@ -49,7 +52,9 @@ func CreateUsers(db *gorm.DB) error {
 func CreateBikes(db *gorm.DB) error {
 	var bikeCount int64
 	db.Model(&Bike{}).Count(&bikeCount)
-
+	if bikeCount < maxBikes {
+		slog.Debug("Creating bikes...", "amount", maxBikes-bikeCount)
+	}
 	for bikeCount < maxBikes {
 		if _, err := CreateBike(db, time.Now()); err != nil {
 			return err
