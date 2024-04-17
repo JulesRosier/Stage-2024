@@ -1,4 +1,4 @@
-package main
+package events
 
 import (
 	"database/sql"
@@ -154,6 +154,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	return nil
 }
 
+// Generates sequence where bike is not returned
 func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationData) error {
 	slog.Info("Generating event sequence, Bike is not returned", "station", decrease.OpenDataId)
 	decreaseStation, err := database.GetStationById(decrease.Uuid, db)
@@ -170,8 +171,8 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
 	pickedUpTime := decrease.EventTimeStamp.UTC()
 	defectTime := pickedUpTime.Add(helper.RandMinutes(60*5, 60)).UTC()
-	immobilizedTime := defectTime.Add(helper.RandMinutes(2*5, 2)).UTC()
-	abandonedTime := immobilizedTime.Add(helper.RandMinutes(2*5, 2)).UTC()
+	immobilizedTime := defectTime.Add(helper.RandMinutes(60*5, 2)).UTC()
+	abandonedTime := immobilizedTime.Add(helper.RandMinutes(60*5, 2)).UTC()
 	endTime := abandonedTime.Add(helper.RandMinutes(60*5, 60)).UTC()
 
 	bike, user, err := getBikeAndUser(db, startTime)
@@ -212,13 +213,6 @@ func generateBikeNotReturned(db *gorm.DB, decrease database.HistoricalStationDat
 	bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
 	database.UpdateBike(db, &bike)
 	database.BikeAbandonedEvent(bike, abandonedTime, user, db)
-
-	// chance bike in storage
-	if rand.Float32() < chanceInStorage {
-		bike.IsInStorage = sql.NullBool{Bool: true, Valid: true}
-		database.UpdateBike(db, &bike)
-		database.BikeStoredEvent(bike, endTime, db)
-	}
 
 	db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
 

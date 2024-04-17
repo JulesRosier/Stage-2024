@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"stage2024/pkg/database"
+	"stage2024/pkg/events"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
 	"stage2024/pkg/opendata"
@@ -68,7 +69,7 @@ func main() {
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
 
 	//Generate bike events every x minutes
-	s.Schedule(time.Minute*fakeBikefrequency, func() { BikeEventGen(dbc.DB) })
+	s.Schedule(time.Minute*fakeBikefrequency, func() { events.BikeEventGen(dbc.DB) })
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
