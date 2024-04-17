@@ -23,8 +23,7 @@ func NewDatabase() *DatabaseClient {
 
 	DbUser := os.Getenv("DB_USER")
 	DbPassword := os.Getenv("DB_PASSWORD")
-	DbDatabaseOltp := os.Getenv("DB_DATABASE_OLTP")
-	DbDatabase := os.Getenv("DB_DATABASE")
+	DbDatabase := os.Getenv("DB_DATABASE_OLTP")
 	DbHost := os.Getenv("DB_HOST")
 	DbPort := os.Getenv("DB_PORT")
 
@@ -38,16 +37,20 @@ func NewDatabase() *DatabaseClient {
 		helper.MaybeDieErr(err)
 	}
 
-	if err := createDb(dbcreate, DbDatabase); err != nil {
+	err = dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error
+	if err != nil {
+		if err.Error() == fmt.Sprintf("ERROR: database \"%s\" already exists (SQLSTATE 42P04)", DbDatabase) {
+			slog.Info("Database already exists", "database", DbDatabase)
+			return nil
+		}
 		helper.MaybeDieErr(err)
-	}
-	if err := createDb(dbcreate, DbDatabaseOltp); err != nil {
-		helper.MaybeDieErr(err)
+	} else {
+		slog.Info("Database created", "database", DbDatabase)
 	}
 
 	// connect to database
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		DbUser, DbPassword, DbDatabaseOltp, DbHost, DbPort)
+		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
@@ -61,20 +64,6 @@ func NewDatabase() *DatabaseClient {
 	return &DatabaseClient{
 		DB: db,
 	}
-}
-
-// Creates a new database
-func createDb(db *gorm.DB, name string) error {
-	err := db.Exec("CREATE DATABASE " + name + ";").Error
-	if err != nil {
-		if err.Error() == fmt.Sprintf("ERROR: database \"%s\" already exists (SQLSTATE 42P04)", name) {
-			slog.Info("Database already exists", "database", name)
-			return nil
-		}
-		return err
-	}
-	slog.Info("Database created", "database", name)
-	return nil
 }
 
 func GetStationById(id string, db *gorm.DB) (Station, error) {
