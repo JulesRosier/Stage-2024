@@ -67,6 +67,7 @@ func NewDatabase() *DatabaseClient {
 	}
 }
 
+// Creates a new database
 func createDb(db *gorm.DB, name string) error {
 	err := db.Exec("CREATE DATABASE " + name + ";").Error
 	if err != nil {
@@ -204,8 +205,6 @@ func BikeCleanUp(db *gorm.DB) error {
 		eventTime1, eventTime2, eventTime3 := getEventTimes(bike)
 
 		change := helper.Change{}
-		bike.IsReserved = sql.NullBool{Bool: false, Valid: true}
-		bike.PickedUp = sql.NullBool{Bool: false, Valid: true}
 		bike.IsDefect = sql.NullBool{Bool: false, Valid: true}
 		bike.IsImmobilized = sql.NullBool{Bool: false, Valid: true}
 		bike.IsAbandoned = sql.NullBool{Bool: false, Valid: true}

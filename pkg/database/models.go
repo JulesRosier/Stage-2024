@@ -18,8 +18,6 @@ type Bike struct {
 	Lat            float64
 	Lon            float64
 	IsElectric     sql.NullBool
-	IsReserved     sql.NullBool
-	PickedUp       sql.NullBool
 	IsDefect       sql.NullBool
 	IsImmobilized  sql.NullBool
 	IsAbandoned    sql.NullBool
