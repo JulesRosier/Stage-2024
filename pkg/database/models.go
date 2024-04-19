@@ -57,13 +57,6 @@ type HistoricalStationData struct {
 	gorm.Model
 	EventTimeStamp time.Time
 	Uuid           string
-	OpenDataId     string
-	Lat            float64
-	Lon            float64
-	Name           string
-	MaxCapacity    int32
-	Occupation     int32
-	IsActive       sql.NullBool
 	TopicName      string
 	AmountChanged  int32
 	AmountFaked    int32
@@ -73,19 +66,6 @@ type BikeGenData struct {
 	EventTime time.Time
 	StationId string
 	UserId    string
-}
-
-func (s *Station) ToHistoricalStationData() HistoricalStationData {
-	return HistoricalStationData{
-		Uuid:        s.Id,
-		OpenDataId:  s.OpenDataId,
-		Lat:         s.Lat,
-		Lon:         s.Lon,
-		Name:        s.Name,
-		MaxCapacity: s.MaxCapacity,
-		Occupation:  s.Occupation,
-		IsActive:    s.IsActive,
-	}
 }
 
 func (Outbox) TableName() string {

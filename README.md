@@ -22,7 +22,6 @@ docker push ghcr.io/julesrosier/stage-2024:latest
 ```env
 DB_USER=postgres
 DB_PASSWORD=password
-DB_DATABASE=events
 DB_DATABASE_OLTP=oltp
 DB_HOST=localhost
 DB_PORT=5432

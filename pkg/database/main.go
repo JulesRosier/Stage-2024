@@ -106,7 +106,8 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 // adds historical station data
 func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32, eventTimeStamp *timestamppb.Timestamp) error {
 	slog.Debug("Adding historical data")
-	historicaldata := record.ToHistoricalStationData()
+	historicaldata := HistoricalStationData{}
+	historicaldata.Uuid = record.Id
 	historicaldata.TopicName = topicname
 	historicaldata.AmountChanged = amountChanged
 	historicaldata.AmountFaked = 0
