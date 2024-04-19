@@ -211,7 +211,7 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, d
 		}
 	}
 	// get available user
-	result := db.Where("is_available_timestamp is null OR (extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Scan(&user)
+	result := db.Where("is_available_timestamp is null OR (extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
 		slog.Warn("No available user found, creating user")
 		newUser, err := database.CreateUser(db, startTime.Add(-time.Minute*30))
