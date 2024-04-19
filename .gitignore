@@ -22,3 +22,5 @@ go.work
 cmd/Ignore/
 Ignore/
 .env
+
+tmp
