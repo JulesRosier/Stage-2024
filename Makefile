@@ -1,5 +1,5 @@
 docker-build:
-	docker build . -t  ghcr.io/julesrosier/stage-2024:latest --build-arg GIT_COMMIT=$$(git log -1 --format=%h)
+	docker build -t ghcr.io/julesrosier/stage-2024:latest --build-arg GIT_COMMIT=$(shell git log -1 --format=%h) .
 
 docker-push:
 	docker push ghcr.io/julesrosier/stage-2024:latest
