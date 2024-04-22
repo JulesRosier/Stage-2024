@@ -25,8 +25,8 @@ const (
 // BikeEventGen generates bike events based on station occupation changes in the database
 func BikeEventGen(db *gorm.DB) {
 	slog.Info("Generating bike events")
-	nowUtc := time.Now().UTC().Format(format)
 
+	nowUtc := time.Now().UTC().Format(format)
 	decreases := []database.HistoricalStationData{}
 	//get all unchecked decreases older than minDuration+windowSize
 	err := db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked",
@@ -51,6 +51,7 @@ func BikeEventGen(db *gorm.DB) {
 					decrease.AmountFaked--
 					err := tx.Rollback().Error
 					if err != nil {
+						slog.Warn("Rollback failed", "error", err)
 						return err
 					}
 				}
@@ -67,10 +68,14 @@ func BikeEventGen(db *gorm.DB) {
 		slog.Warn("Failed to get increases", "error", err)
 	}
 
+	// generate amount of sequences for amount decreased/increased
 	for _, increase := range increases {
-		// generate amount of sequences for amount decreased/increased
 		// start sequence with increase
-		if err := generateIncrease(db, increase); err != nil {
+		db.Transaction(func(tx *gorm.DB) error {
+			err := generateIncrease(db, increase)
+			return err
+		})
+		if err != nil {
 			slog.Warn("Error generating event sequence for increase")
 		}
 	}
@@ -85,16 +90,21 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 		database.MakeFakeStation(db)
 		db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	}
-	// Timestamp random amount of minutes inside windowsize + minduration
-	randomMinutes := rand.IntN(int(windowSize) + int(minDuration))
-	if randomMinutes < int(minDuration) {
-		randomMinutes = int(minDuration)
-	}
 
 	for range increase.AmountChanged - increase.AmountFaked {
+		// Timestamp random amount of minutes inside windowsize + minduration
+		randomMinutes := rand.IntN(int(windowSize) + int(minDuration))
+		if randomMinutes < int(minDuration) {
+			randomMinutes = int(minDuration)
+		}
 		timestamp := increase.EventTimeStamp.Add(-time.Duration(randomMinutes))
+		if timestamp.Before(station.CreatedAt) {
+			slog.Info("Increase too close to station creation")
+			db.Model(&increase).Update("amount_faked", increase.AmountChanged)
+			return nil
+		}
 		database.OccupationChange(station, helper.Change{Id: station.Id, OldValue: fmt.Sprint(station.Occupation), NewValue: fmt.Sprint(station.Occupation - 1)}, timestamp, db)
-		slog.Info("generated fake decrease")
+		slog.Debug("generated fake decrease")
 		//get generated decrease
 		decrease := database.HistoricalStationData{}
 		result = db.Model(&decrease).Where("uuid = ? and amount_changed > amount_faked and topic_name = 'station_occupation_decreased'", station.Id).First(&decrease)
@@ -104,8 +114,8 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 
 		err := generate(db, increase, decrease)
 		if err != nil {
-			slog.Warn("Fake event transaction failed", "error", err)
 			increase.AmountFaked--
+			return err
 		}
 
 	}
@@ -245,7 +255,7 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, d
 			"(in_use_timestamp is null OR (extract(epoch from ? - in_use_timestamp)/60 > 0) AND extract(epoch from ? - created_at)/60 > 0)",
 			startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike); result.RowsAffected == 0 {
 			// If still no bike available, create bike
-			slog.Info("No available bike found, creating bike")
+			slog.Debug("No available bike found, creating bike")
 			newBike, err := database.CreateBike(db, startTime.Add(-time.Minute*30))
 			if err != nil {
 				return database.Bike{}, database.User{}, err
@@ -256,7 +266,7 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, d
 	// get available user
 	result := db.Where("is_available_timestamp is null OR (extract(epoch from ? - is_available_timestamp)/60 > 0 AND extract(epoch from ? - created_at)/60 > 0)", startTimeString, startTimeString).Order("random()").Limit(1).Find(&user)
 	if result.RowsAffected == 0 {
-		slog.Info("No available user found, creating user")
+		slog.Debug("No available user found, creating user")
 		newUser, err := database.CreateUser(db, startTime.Add(-time.Minute*30))
 		if err != nil {
 			return database.Bike{}, database.User{}, err
