@@ -36,9 +36,9 @@ func NewDatabase() *DatabaseClient {
 	if err != nil {
 		helper.MaybeDieErr(err)
 	}
-
-	result := dbcreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname='?'", DbDatabase)
-	if result.RowsAffected == 0 {
+	var datname string
+	dbcreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname='?'", DbDatabase).Limit(1).Find(datname)
+	if datname != DbDatabase {
 		if err := dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error; err != nil {
 			slog.Warn("Failed to create Database")
 			helper.Die(err)

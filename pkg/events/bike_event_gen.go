@@ -12,8 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-//TODO bike deployed event is weird //missschien gefixt door haakjes te zetten
-
 const (
 	minDuration             = time.Minute * 10
 	windowSize              = time.Minute * 30
