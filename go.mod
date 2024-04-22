@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/twmb/franz-go v1.16.1
+	github.com/twmb/franz-go/pkg/kadm v1.11.0
 	github.com/twmb/franz-go/pkg/sr v0.0.0-20240307025822-351e7fae879c
 	google.golang.org/protobuf v1.33.0
 	gorm.io/driver/postgres v1.5.7

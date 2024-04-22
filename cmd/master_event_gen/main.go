@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -53,6 +54,7 @@ func main() {
 	kc := kafka.NewClient(kafka.Config{
 		Topics: topics,
 	})
+	kc.CreateTopics(context.Background())
 
 	ol := kafka.NewOutboxListener(kc, dbc, topics)
 	ol.Start()

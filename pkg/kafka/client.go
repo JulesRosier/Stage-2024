@@ -11,7 +11,10 @@ import (
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kversion"
+	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/pkg/sr"
 )
 
@@ -71,28 +74,64 @@ func (c KafkaClient) findTopicByType(inputType any) (string, bool) {
 	return "", false
 }
 
+func (c *KafkaClient) CreateTopics(ctx context.Context) {
+	acl := kadm.NewClient(c.Kcl)
+	topicDetails, err := acl.ListTopics(ctx)
+	helper.MaybeDieErr(err)
+
+	for _, topic := range c.Config.Topics {
+		t := topic.getName("")
+		if !topicDetails.Has(t) {
+			a, err := acl.CreateTopic(ctx, -1, -1, nil, t)
+			helper.MaybeDie(err, "Failed to create topic")
+			slog.Info("topic created", "topic", a.Topic)
+		}
+	}
+}
+
 func getClient() *kgo.Client {
 	seed := os.Getenv("SEED_BROKER")
+	user := os.Getenv("EH_AUTH_USER")
+	pw := os.Getenv("EH_AUTH_PASSWORD")
 
 	slog.Info("Starting kafka client", "seedbrokers", seed)
-	cl, err := kgo.NewClient(
+	clientConfigs := []kgo.Opt{
 		kgo.SeedBrokers(seed),
+		kgo.FetchMaxBytes(5 * 1000 * 1000),
+		kgo.MaxConcurrentFetches(12),
+		kgo.MaxVersions(kversion.V2_6_0()),
 		kgo.AllowAutoTopicCreation(),
-		// we only need to produce
-		// kgo.ConsumeRegex(),
-		// kgo.ConsumeTopics("^[A-Za-z].*"),
-		// kgo.ConsumerGroup("Testing"),
-	)
-	helper.MaybeDie(err, "error while starting kafka client")
+	}
 
+	if user != "" && pw != "" {
+		clientConfigs = append(clientConfigs, kgo.SASL(scram.Auth{
+			User: user,
+			Pass: pw,
+		}.AsSha512Mechanism()))
+	}
+	cl, err := kgo.NewClient(
+		clientConfigs...,
+	)
+
+	helper.MaybeDie(err, "error while starting kafka client")
+	err = cl.Ping(context.Background())
+	helper.MaybeDie(err, "No ping")
 	return cl
 }
 
 func getRepoClient() *sr.Client {
 	registry := os.Getenv("REGISTRY")
+	user := os.Getenv("EH_AUTH_USER")
+	pw := os.Getenv("EH_AUTH_PASSWORD")
 
 	slog.Info("starting schema registry client", "host", registry)
-	rcl, err := sr.NewClient(sr.URLs(registry))
+	opts := []sr.Opt{
+		sr.URLs(registry),
+	}
+	if user != "" && pw != "" {
+		opts = append(opts, sr.BasicAuth(user, pw))
+	}
+	rcl, err := sr.NewClient(opts...)
 	helper.MaybeDieErr(err)
 	return rcl
 }
