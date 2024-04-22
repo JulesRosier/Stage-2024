@@ -130,8 +130,8 @@ func MakeFakeStation(db *gorm.DB) {
 		Name:        "Bike factory",
 		Lat:         51.037580,
 		Lon:         3.735660,
-		MaxCapacity: 9999999,
-		Occupation:  9999999,
+		MaxCapacity: 999999999,
+		Occupation:  999999999,
 		IsActive:    sql.NullBool{Bool: true, Valid: true},
 	}
 	UpdateStation([]*Station{station}, db)
