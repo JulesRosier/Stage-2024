@@ -30,7 +30,7 @@ func NewDatabase() *DatabaseClient {
 	slog.Info("Starting database", "host", DbHost, "database", DbDatabase)
 
 	// connect to db and create database if it does not exist
-	createconnstr := fmt.Sprintf("user=%s password=%s host=%s port=%s sslmode=disable",
+	createconnstr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres sslmode=disable",
 		DbUser, DbPassword, DbHost, DbPort)
 	dbcreate, err := gorm.Open(postgres.Open(createconnstr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
