@@ -28,7 +28,7 @@ func BikeEventGen(db *gorm.DB) {
 
 	nowUtc := time.Now().UTC().Format(format)
 	decreases := []database.HistoricalStationData{}
-	//get all unchecked decreases older than minDuration+windowSize
+	//get all decreases older than minDuration+windowSize wiht amount faked < amount changed
 	err := db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked",
 		nowUtc, (minDuration + windowSize).Minutes()).Order("id asc").Find(&decreases).Error
 	if err != nil {
@@ -49,11 +49,7 @@ func BikeEventGen(db *gorm.DB) {
 				if err != nil {
 					slog.Warn("Fake event transaction failed", "error", err)
 					decrease.AmountFaked--
-					err := tx.Rollback().Error
-					if err != nil {
-						slog.Warn("Rollback failed", "error", err)
-						return err
-					}
+					tx.Rollback()
 				}
 				return nil
 			})
@@ -117,7 +113,6 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 			increase.AmountFaked--
 			return err
 		}
-
 	}
 
 	return nil
@@ -165,7 +160,6 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 		if rand.Float64() < chanceDefectNotReturned {
 			bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
 			database.BikeDefectEvent(bike, defectTime, user, defects[rand.IntN(len(defects))], db)
-
 			// chance bike immobilized
 			if rand.Float64() < chanceImmobilized {
 				bike.IsImmobilized = sql.NullBool{Bool: true, Valid: true}

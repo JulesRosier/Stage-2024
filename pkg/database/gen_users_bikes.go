@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxUsers = 1000
-const maxBikes = 3000
+const maxUsers = 500
+const maxBikes = 500
 
 func CreateUsersBikes(db *gorm.DB) {
 	slog.Debug("Creating users and bikes")
