@@ -37,15 +37,12 @@ func NewDatabase() *DatabaseClient {
 		helper.MaybeDieErr(err)
 	}
 
-	err = dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error
-	if err != nil {
-		if err.Error() == fmt.Sprintf("ERROR: database \"%s\" already exists (SQLSTATE 42P04)", DbDatabase) {
-			slog.Info("Database already exists", "database", DbDatabase)
-		} else {
-			helper.MaybeDieErr(err)
+	result := dbcreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname='?'", DbDatabase)
+	if result.RowsAffected == 0 {
+		if err := dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error; err != nil {
+			slog.Warn("Failed to create Database")
+			helper.Die(err)
 		}
-	} else {
-		slog.Info("Database created", "database", DbDatabase)
 	}
 
 	// connect to database

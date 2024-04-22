@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//TODO bike deployed event is weird //missschien gefixt door haakjes te zetten
+
 const (
 	minDuration             = time.Minute * 10
 	windowSize              = time.Minute * 30
@@ -69,6 +71,7 @@ func BikeEventGen(db *gorm.DB) {
 	}
 
 	// generate amount of sequences for amount decreased/increased
+	slog.Info("Generating fake decreases for increase")
 	for _, increase := range increases {
 		// start sequence with increase
 		db.Transaction(func(tx *gorm.DB) error {
@@ -83,7 +86,6 @@ func BikeEventGen(db *gorm.DB) {
 
 func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) error {
 	// bike needs to get picked up from fake station...
-	slog.Info("Generating fake decreases for increase")
 	station := database.Station{}
 	result := db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	if result.RowsAffected == 0 {
@@ -245,7 +247,7 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, d
 	//get available bike not in use
 	bike, user := database.Bike{}, database.User{}
 	if result := db.Where("(is_defect = false AND is_immobilized = false AND is_abandoned = false AND is_in_storage = false AND is_returned = true) AND "+
-		"(in_use_timestamp is null OR (extract(epoch from ? - in_use_timestamp)/60 > 0) AND extract(epoch from ? - created_at)/60 > 0)",
+		"((in_use_timestamp is null OR (extract(epoch from ? - in_use_timestamp)/60 > 0)) AND extract(epoch from ? - created_at)/60 > 0)",
 		startTimeString, startTimeString).Order("random()").Limit(1).Find(&bike); result.RowsAffected == 0 {
 		// If no bike available, clean up bikes
 		if err := database.BikeCleanUp(db); err != nil {
