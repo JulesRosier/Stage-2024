@@ -57,6 +57,7 @@ type HistoricalStationData struct {
 	gorm.Model
 	EventTimeStamp time.Time
 	Uuid           string
+	OpenDataId     string
 	TopicName      string
 	AmountChanged  int32
 	AmountFaked    int32

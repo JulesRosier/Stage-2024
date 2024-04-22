@@ -2,6 +2,7 @@ package database
 
 import (
 	"stage2024/pkg/helper"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,7 +18,7 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 	case "lat", "lon":
 		// kan denkik niet?
 	case "Occupation":
-		err := occupationChange(station, change, db)
+		err := OccupationChange(station, change, time.Now(), db)
 		return err
 	case "IsActive":
 		err := activeChange(station, change, db)

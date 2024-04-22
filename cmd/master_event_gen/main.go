@@ -66,7 +66,7 @@ func main() {
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })
 	s.Schedule(time.Minute*5, func() { opendata.StorageTownHall(dbc.DB) })
 
-	s.Schedule(time.Second*30, ol.FetchOutboxData)
+	s.Schedule(time.Second*10, ol.FetchOutboxData)
 
 	//Generate bike events every x minutes
 	s.Schedule(time.Minute*fakeBikefrequency, func() { events.BikeEventGen(dbc.DB) })

@@ -19,7 +19,6 @@ func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) 
 
 	oldv := reflect.Indirect(reflect.ValueOf(oldrecord))
 	newv := reflect.Indirect(reflect.ValueOf(record))
-	change.Table = newv.Type().Name()
 	change.Id = newv.Field(1).String()
 	change.OpenDataId = newv.Field(2).String()
 

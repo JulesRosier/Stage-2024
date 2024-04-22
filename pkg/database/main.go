@@ -108,6 +108,7 @@ func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountCha
 	slog.Debug("Adding historical data")
 	historicaldata := HistoricalStationData{}
 	historicaldata.Uuid = record.Id
+	historicaldata.OpenDataId = record.OpenDataId
 	historicaldata.TopicName = topicname
 	historicaldata.AmountChanged = amountChanged
 	historicaldata.AmountFaked = 0

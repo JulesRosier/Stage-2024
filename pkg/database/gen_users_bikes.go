@@ -121,3 +121,20 @@ var bikeBrands = []string{
 	"Whimsical Wheels",
 	"Chuckling Chains",
 }
+
+func MakeFakeStation(db *gorm.DB) {
+	// Create bike factory station
+	station := &Station{
+		Id:          "ab448be3-5c90-43ce-8c37-74f929ec016f",
+		OpenDataId:  "Bike-factory123",
+		Name:        "Bike factory",
+		Lat:         51.037580,
+		Lon:         3.735660,
+		MaxCapacity: 9999999,
+		Occupation:  9999999,
+		IsActive:    sql.NullBool{Bool: true, Valid: true},
+	}
+	UpdateStation([]*Station{station}, db)
+
+	slog.Info("updated", "station", station.Id, "occupation", station.Occupation)
+}

@@ -5,12 +5,13 @@ import (
 	"reflect"
 	"stage2024/pkg/helper"
 	"stage2024/pkg/protogen/stations"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 
-func occupationChange(station Station, change helper.Change, db *gorm.DB) error {
+func OccupationChange(station Station, change helper.Change, eventTimeStamp time.Time, db *gorm.DB) error {
 	newValue, err := helper.StringToInt(change.NewValue)
 	if err != nil {
 		slog.Warn("Error converting string to int", "error", err)
@@ -20,17 +21,18 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 		slog.Warn("Error converting string to int", "error", err)
 	}
 
+	timestamp := timestamppb.New(eventTimeStamp)
+
 	//station full
 	if station.Occupation == station.MaxCapacity {
 		slog.Debug("Station is full, sending event...", "station", station.OpenDataId)
 
-		now := timestamppb.Now()
 		protostruct := &stations.StationFull{
-			TimeStamp:   now,
+			TimeStamp:   timestamp,
 			Station:     station.IntoId(),
 			MaxCapacity: station.MaxCapacity,
 		}
-		if err := createOutboxRecord(now, protostruct, db); err != nil {
+		if err := createOutboxRecord(timestamp, protostruct, db); err != nil {
 			return err
 		}
 
@@ -47,16 +49,15 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 	if newValue > oldValue {
 		slog.Debug("Station occupation increased, sending event...", "station", station.OpenDataId)
 
-		now := timestamppb.Now()
 		protostruct := &stations.StationOccupationIncreased{
-			TimeStamp:                now,
+			TimeStamp:                timestamp,
 			Station:                  station.IntoId(),
 			AmountIncreased:          newValue - oldValue,
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
 		}
 
-		if err := createOutboxRecord(now, protostruct, db); err != nil {
+		if err := createOutboxRecord(timestamp, protostruct, db); err != nil {
 			return err
 		}
 
@@ -73,16 +74,15 @@ func occupationChange(station Station, change helper.Change, db *gorm.DB) error 
 	if newValue < oldValue {
 		slog.Debug("Station occupation decreased, sending event...", "station", station.OpenDataId)
 
-		now := timestamppb.Now()
 		protostruct := &stations.StationOccupationDecreased{
-			TimeStamp:                now,
+			TimeStamp:                timestamp,
 			Station:                  station.IntoId(),
 			AmountDecreased:          (oldValue - newValue),
 			CurrentAvailableCapacity: station.Occupation,
 			MaxCapacity:              station.MaxCapacity,
 		}
 
-		if err := createOutboxRecord(now, protostruct, db); err != nil {
+		if err := createOutboxRecord(timestamp, protostruct, db); err != nil {
 			return err
 		}
 

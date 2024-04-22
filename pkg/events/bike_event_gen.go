@@ -2,6 +2,7 @@ package events
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"math/rand/v2"
 	"stage2024/pkg/database"
@@ -18,6 +19,7 @@ const (
 	chanceDefectNotReturned = 0.5
 	chanceImmobilized       = 0.5
 	format                  = "2006-01-02 15:04:05.999999-07"
+	fakeStationId           = "ab448be3-5c90-43ce-8c37-74f929ec016f"
 )
 
 // BikeEventGen generates bike events based on station occupation changes in the database
@@ -56,6 +58,59 @@ func BikeEventGen(db *gorm.DB) {
 			})
 		}
 	}
+
+	// get all unchecked increases older than minDuration+windowSize
+	increases := []database.HistoricalStationData{}
+	err = db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_increased' and amount_changed > amount_faked",
+		nowUtc, (minDuration + windowSize).Minutes()).Order("id asc").Find(&increases).Error
+	if err != nil {
+		slog.Warn("Failed to get increases", "error", err)
+	}
+
+	for _, increase := range increases {
+		// generate amount of sequences for amount decreased/increased
+		// start sequence with increase
+		if err := generateIncrease(db, increase); err != nil {
+			slog.Warn("Error generating event sequence for increase")
+		}
+	}
+}
+
+func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) error {
+	// bike needs to get picked up from fake station...
+	slog.Info("Generating fake decreases for increase")
+	station := database.Station{}
+	result := db.Model(&station).Where("id = ?", fakeStationId).First(&station)
+	if result.RowsAffected == 0 {
+		database.MakeFakeStation(db)
+		db.Model(&station).Where("id = ?", fakeStationId).First(&station)
+	}
+	// Timestamp random amount of minutes inside windowsize + minduration
+	randomMinutes := rand.IntN(int(windowSize) + int(minDuration))
+	if randomMinutes < int(minDuration) {
+		randomMinutes = int(minDuration)
+	}
+
+	for range increase.AmountChanged - increase.AmountFaked {
+		timestamp := increase.EventTimeStamp.Add(-time.Duration(randomMinutes))
+		database.OccupationChange(station, helper.Change{Id: station.Id, OldValue: fmt.Sprint(station.Occupation), NewValue: fmt.Sprint(station.Occupation - 1)}, timestamp, db)
+		slog.Info("generated fake decrease")
+		//get generated decrease
+		decrease := database.HistoricalStationData{}
+		result = db.Model(&decrease).Where("uuid = ? and amount_changed > amount_faked and topic_name = 'station_occupation_decreased'", station.Id).First(&decrease)
+		if result.RowsAffected == 0 {
+			slog.Info("No decrease found for station", "station", station.Id)
+		}
+
+		err := generate(db, increase, decrease)
+		if err != nil {
+			slog.Warn("Fake event transaction failed", "error", err)
+			increase.AmountFaked--
+		}
+
+	}
+
+	return nil
 }
 
 // generates bike event sequence
@@ -150,15 +205,15 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 }
 
 // Gets random start offset for event sequence that is not before station creation
-func getStartOffset(db *gorm.DB, decrease database.HistoricalStationData) (time.Duration, error) {
+func getStartOffset(db *gorm.DB, station database.HistoricalStationData) (time.Duration, error) {
 	stationCreated := database.HistoricalStationData{}
-	err := db.Where("uuid = ? AND topic_name = 'station_created'", decrease.Uuid).Limit(1).Find(&stationCreated).Error
+	err := db.Where("uuid = ? AND topic_name = 'station_created'", station.Uuid).Limit(1).Find(&stationCreated).Error
 	if err != nil {
-		slog.Info("Station not found", "station", decrease.Uuid, "error", err)
+		slog.Info("Station not found", "station", station.Uuid, "error", err)
 		return 0, err
 	}
 
-	delta := decrease.EventTimeStamp.Sub(stationCreated.EventTimeStamp)
+	delta := station.EventTimeStamp.Sub(stationCreated.EventTimeStamp)
 	if delta > windowSize {
 		delta = windowSize
 	}
