@@ -83,6 +83,7 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 	station := database.Station{}
 	result := db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	if result.RowsAffected == 0 {
+		slog.Debug("Fake station not found", "station", fakeStationId)
 		database.MakeFakeStation(db)
 		db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	}
@@ -100,6 +101,7 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 			return nil
 		}
 		database.OccupationChange(station, helper.Change{Id: station.Id, OldValue: fmt.Sprint(station.Occupation), NewValue: fmt.Sprint(station.Occupation - 1)}, timestamp, db)
+		station.Occupation = station.Occupation - 1
 		slog.Debug("generated fake decrease")
 		//get generated decrease
 		decrease := database.HistoricalStationData{}

@@ -15,8 +15,6 @@ func ChangeDetected(change helper.Change, db *gorm.DB) error {
 	}
 
 	switch change.Column {
-	case "lat", "lon":
-		// kan denkik niet?
 	case "Occupation":
 		err := OccupationChange(station, change, time.Now(), db)
 		return err
