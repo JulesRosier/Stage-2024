@@ -87,6 +87,10 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 		database.MakeFakeStation(db)
 		db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	}
+	if station.Occupation < 50 {
+		station.Occupation = station.MaxCapacity - 1
+		db.Save(&station)
+	}
 
 	for range increase.AmountChanged - increase.AmountFaked {
 		// Timestamp random amount of minutes inside windowsize + minduration
