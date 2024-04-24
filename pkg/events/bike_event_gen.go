@@ -84,7 +84,7 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 	result := db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	if result.RowsAffected == 0 {
 		slog.Debug("Fake station not found", "station", fakeStationId)
-		database.MakeFakeStation(db)
+		database.MakeFakeStation(db, fakeStationId)
 		db.Model(&station).Where("id = ?", fakeStationId).First(&station)
 	}
 	if station.Occupation < 50 {

@@ -11,17 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxUsers = 500
-const maxBikes = 500
-
 // Creates 'maxUser' amount of users and 'maxBikes' amount of bikes
-func CreateUsersBikes(db *gorm.DB) {
+func CreateUsersBikes(db *gorm.DB, maxUsers int64, maxBikes int64) {
 	slog.Debug("Creating users and bikes")
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := CreateUsers(db); err != nil {
+		if err := CreateUsers(db, maxUsers); err != nil {
 			return err
 		}
-		if err := CreateBikes(db); err != nil {
+		if err := CreateBikes(db, maxBikes); err != nil {
 			return err
 		}
 		return nil
@@ -32,7 +29,7 @@ func CreateUsersBikes(db *gorm.DB) {
 }
 
 // Creates 'maxUsers' amount of users
-func CreateUsers(db *gorm.DB) error {
+func CreateUsers(db *gorm.DB, maxUsers int64) error {
 	var userCount int64
 	db.Model(&User{}).Count(&userCount)
 	if userCount < maxUsers {
@@ -50,7 +47,7 @@ func CreateUsers(db *gorm.DB) error {
 }
 
 // Creates 'maxBikes' amount of bikes
-func CreateBikes(db *gorm.DB) error {
+func CreateBikes(db *gorm.DB, maxBikes int64) error {
 	var bikeCount int64
 	db.Model(&Bike{}).Count(&bikeCount)
 	if bikeCount < maxBikes {
@@ -124,9 +121,9 @@ var bikeBrands = []string{
 }
 
 // Creates fake bike factory station
-func MakeFakeStation(db *gorm.DB) {
+func MakeFakeStation(db *gorm.DB, id string) {
 	station := &Station{
-		Id:          "ab448be3-5c90-43ce-8c37-74f929ec016f",
+		Id:          id,
 		OpenDataId:  "Bike-factory123",
 		Name:        "Bike factory",
 		Lat:         51.037580,

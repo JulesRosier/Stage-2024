@@ -19,6 +19,8 @@ import (
 )
 
 const fakeBikeFrequency = 60
+const maxUsers = 500
+const maxBikes = 500
 
 func main() {
 	fmt.Println("Starting...")
@@ -61,7 +63,7 @@ func main() {
 
 	s := scheduler.NewScheduler()
 
-	database.CreateUsersBikes(dbc.DB)
+	database.CreateUsersBikes(dbc.DB, maxUsers, maxBikes)
 
 	// Schedule the data fetching functions
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
