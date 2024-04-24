@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Fetches data from the OpenData API, sends changes to oltp database and sends events to outbox
 func BlueBike(db *gorm.DB) {
 	urls := []string{"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-sint-pieters-m-hendrikaplein/records",
 		"https://data.stad.gent/api/explore/v2.1/catalog/datasets/blue-bike-deelfietsen-gent-dampoort/records",

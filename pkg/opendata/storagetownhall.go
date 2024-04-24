@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Fetches data from the OpenData API, sends changes to oltp database and sends events to outbox
 func StorageTownHall(db *gorm.DB) {
 	url := "https://data.stad.gent/api/explore/v2.1/catalog/datasets/real-time-bezetting-fietsenstalling-stadskantoor-gent/records"
 	model := "StorageTownHall"

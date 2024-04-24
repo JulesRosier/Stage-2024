@@ -14,6 +14,7 @@ import (
 const maxUsers = 500
 const maxBikes = 500
 
+// Creates 'maxUser' amount of users and 'maxBikes' amount of bikes
 func CreateUsersBikes(db *gorm.DB) {
 	slog.Debug("Creating users and bikes")
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -64,7 +65,7 @@ func CreateBikes(db *gorm.DB) error {
 	return nil
 }
 
-// creates a single user
+// Creates a single user
 func CreateUser(db *gorm.DB, createTime time.Time) (*User, error) {
 	user := &User{
 		Id:           gofakeit.UUID(),
@@ -81,7 +82,7 @@ func CreateUser(db *gorm.DB, createTime time.Time) (*User, error) {
 	return user, nil
 }
 
-// creates a single bike
+// Creates a single bike
 func CreateBike(db *gorm.DB, createTime time.Time) (*Bike, error) {
 	bike := &Bike{
 		Id:             uuid.New().String(),
@@ -122,8 +123,8 @@ var bikeBrands = []string{
 	"Chuckling Chains",
 }
 
+// Creates fake bike factory station
 func MakeFakeStation(db *gorm.DB) {
-	// Create bike factory station
 	station := &Station{
 		Id:          "ab448be3-5c90-43ce-8c37-74f929ec016f",
 		OpenDataId:  "Bike-factory123",

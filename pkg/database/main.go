@@ -30,16 +30,16 @@ func NewDatabase() *DatabaseClient {
 	slog.Info("Starting database", "host", DbHost, "database", DbDatabase)
 
 	// connect to db and create database if it does not exist
-	createconnstr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres sslmode=disable",
+	createConnStr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres sslmode=disable",
 		DbUser, DbPassword, DbHost, DbPort)
-	dbcreate, err := gorm.Open(postgres.Open(createconnstr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	dbCreate, err := gorm.Open(postgres.Open(createConnStr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	helper.MaybeDieErr(err)
 
-	var datname string
-	dbcreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname=?", DbDatabase).Scan(&datname)
-	slog.Info("d", "datname", datname)
-	if datname != DbDatabase {
-		err := dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error
+	var dbName string
+	dbCreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname=?", DbDatabase).Scan(&dbName)
+	slog.Info("d", "datname", dbName)
+	if dbName != DbDatabase {
+		err := dbCreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error
 		helper.MaybeDie(err, "Failed to create Database")
 
 	}
@@ -98,16 +98,16 @@ func createOutboxRecord(now *timestamppb.Timestamp, protostruct proto.Message, d
 }
 
 // adds historical station data
-func addHistoricaldata(record *Station, topicname string, db *gorm.DB, amountChanged int32, eventTimeStamp *timestamppb.Timestamp) error {
+func addHistoricalData(record *Station, topicName string, db *gorm.DB, amountChanged int32, eventTimeStamp *timestamppb.Timestamp) error {
 	slog.Debug("Adding historical data")
-	historicaldata := HistoricalStationData{}
-	historicaldata.Uuid = record.Id
-	historicaldata.OpenDataId = record.OpenDataId
-	historicaldata.TopicName = topicname
-	historicaldata.AmountChanged = amountChanged
-	historicaldata.AmountFaked = 0
-	historicaldata.EventTimeStamp = eventTimeStamp.AsTime()
-	err := db.Create(&historicaldata).Error
+	historicalData := HistoricalStationData{}
+	historicalData.Uuid = record.Id
+	historicalData.OpenDataId = record.OpenDataId
+	historicalData.TopicName = topicName
+	historicalData.AmountChanged = amountChanged
+	historicalData.AmountFaked = 0
+	historicalData.EventTimeStamp = eventTimeStamp.AsTime()
+	err := db.Create(&historicalData).Error
 
 	return err
 }

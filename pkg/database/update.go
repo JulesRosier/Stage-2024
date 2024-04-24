@@ -24,8 +24,8 @@ func UpdateBike(db *gorm.DB, record *Bike) error {
 func UpdateStation(records []*Station, db *gorm.DB) {
 	slog.Debug("Updating stations")
 	for _, record := range records {
-		oldrecord := &Station{}
-		result := db.Limit(1).Find(&oldrecord, "open_data_id = ?", record.OpenDataId)
+		oldRecord := &Station{}
+		result := db.Limit(1).Find(&oldRecord, "open_data_id = ?", record.OpenDataId)
 
 		//start transaction
 		err := db.Transaction(func(tx *gorm.DB) error {
@@ -34,12 +34,12 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 					return err
 				}
 
-				// send change for created record to OUtbox
+				// send change for created record to Outbox
 				if err := createStationEvent(record, tx); err != nil {
 					return err
 				}
 			} else {
-				record.Id = oldrecord.Id
+				record.Id = oldRecord.Id
 
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -48,7 +48,7 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 					return err
 				}
 
-				if err := ColumnChange(oldrecord, record, tx, helper.Change{}); err != nil {
+				if err := ColumnChange(oldRecord, record, tx, helper.Change{}); err != nil {
 					return err
 				}
 			}

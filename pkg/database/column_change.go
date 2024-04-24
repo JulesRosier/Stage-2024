@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"reflect"
 	"stage2024/pkg/helper"
+	"time"
 
 	"gorm.io/gorm"
 )
 
-// Compares two records and sends changes to a channel
+// Compares two records and sends changes to the outbox
 func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) error {
 
 	if reflect.TypeOf(oldrecord) != reflect.TypeOf(record) {
@@ -43,11 +44,30 @@ func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) 
 
 			slog.Debug("change", "Column", change.Column, "id", change.Id)
 
-			if err := ChangeDetected(change, db); err != nil {
+			if err := changeDetected(change, db); err != nil {
 				return err
 			}
 
 		}
 	}
 	return nil
+}
+
+// Selects right events to send based on change for stations
+func changeDetected(change helper.Change, db *gorm.DB) error {
+	station, err := GetStationById(change.Id, db)
+	if err != nil {
+		return err
+	}
+
+	switch change.Column {
+	case "Occupation":
+		err := OccupationChange(station, change, time.Now(), db)
+		return err
+	case "IsActive":
+		err := activeChange(station, change, db)
+		return err
+	}
+
+	return err
 }

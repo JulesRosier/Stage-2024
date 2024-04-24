@@ -22,13 +22,13 @@ const (
 	fakeStationId           = "ab448be3-5c90-43ce-8c37-74f929ec016f"
 )
 
-// BikeEventGen generates bike events based on station occupation changes in the database
+// BikeEventGen generates bike events based on historical station occupation changes in the database
 func BikeEventGen(db *gorm.DB) {
 	slog.Info("Generating bike events")
 
 	nowUtc := time.Now().UTC().Format(format)
 	decreases := []database.HistoricalStationData{}
-	//get all decreases older than minDuration+windowSize wiht amount faked < amount changed
+	//get all decreases older than minDuration+windowSize with amount faked < amount changed
 	err := db.Where("extract(epoch from ? - event_time_stamp)/60 >= ? and topic_name = 'station_occupation_decreased' and amount_changed > amount_faked",
 		nowUtc, (minDuration + windowSize).Minutes()).Order("id asc").Find(&decreases).Error
 	if err != nil {
@@ -40,19 +40,18 @@ func BikeEventGen(db *gorm.DB) {
 		// start sequence with decrease
 		for range decrease.AmountChanged {
 			decrease.AmountFaked++
-			db.Transaction(func(tx *gorm.DB) error {
+			err := db.Transaction(func(tx *gorm.DB) error {
 				//get increase for decrease within window
 				increase := database.HistoricalStationData{}
 				db.Where("event_time_stamp between ? and ? AND topic_name = 'station_occupation_increased' AND amount_changed > amount_faked",
 					decrease.EventTimeStamp.Add(minDuration), decrease.EventTimeStamp.Add(minDuration+windowSize)).Order("random()").Limit(1).Find(&increase)
 				err := generate(db, increase, decrease)
-				if err != nil {
-					slog.Warn("Fake event transaction failed", "error", err)
-					decrease.AmountFaked--
-					tx.Rollback()
-				}
-				return nil
+				return err
 			})
+			if err != nil {
+				slog.Warn("Fake event transaction failed", "error", err)
+				decrease.AmountFaked--
+			}
 		}
 	}
 
@@ -78,6 +77,7 @@ func BikeEventGen(db *gorm.DB) {
 	}
 }
 
+// generates fake decrease events for increase
 func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) error {
 	// bike needs to get picked up from fake station...
 	station := database.Station{}
@@ -93,7 +93,7 @@ func generateIncrease(db *gorm.DB, increase database.HistoricalStationData) erro
 	}
 
 	for range increase.AmountChanged - increase.AmountFaked {
-		// Timestamp random amount of minutes inside windowsize + minduration
+		// Timestamp random amount of minutes inside windowSize + minDuration
 		randomMinutes := rand.IntN(int(windowSize) + int(minDuration))
 		if randomMinutes < int(minDuration) {
 			randomMinutes = int(minDuration)
@@ -133,12 +133,12 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	}
 
 	// number of minutes bike is reserved before it is picked up
-	startoffset, err := getStartOffset(db, decrease)
+	startOffset, err := getStartOffset(db, decrease)
 	if err != nil {
 		return err
 	}
 
-	startTime := decrease.EventTimeStamp.Add(-startoffset).UTC()
+	startTime := decrease.EventTimeStamp.Add(-startOffset).UTC()
 	pickedUpTime := decrease.EventTimeStamp.UTC()
 	defectTime := pickedUpTime.Add(helper.RandMinutes(60*5, 60)).UTC()
 	immobilizedTime := defectTime.Add(helper.RandMinutes(60*5, 2)).UTC()
@@ -162,7 +162,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	if increase == (database.HistoricalStationData{}) {
 		slog.Info("Bike not returned", "station", decreaseStation.Name)
 		endTime = fakeEndTime
-		// chance bikedefect
+		// chance bike defect
 		if rand.Float64() < chanceDefectNotReturned {
 			bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
 			database.BikeDefectEvent(bike, defectTime, user, defects[rand.IntN(len(defects))], db)

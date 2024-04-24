@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-const fakeBikefrequency = 60
+const fakeBikeFrequency = 60
 
 func main() {
 	fmt.Println("Starting...")
@@ -63,6 +63,7 @@ func main() {
 
 	database.CreateUsersBikes(dbc.DB)
 
+	// Schedule the data fetching functions
 	s.Schedule(time.Minute*5, func() { opendata.BlueBike(dbc.DB) })
 	s.Schedule(time.Minute*10, func() { opendata.Donkey(dbc.DB) })
 	s.Schedule(time.Minute*1, func() { opendata.StorageGhent(dbc.DB) })
@@ -70,8 +71,8 @@ func main() {
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
 
-	//Generate bike events every x minutes
-	s.Schedule(time.Minute*fakeBikefrequency, func() { events.BikeEventGen(dbc.DB) })
+	//Generate bike events
+	s.Schedule(time.Minute*fakeBikeFrequency, func() { events.BikeEventGen(dbc.DB) })
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

@@ -15,6 +15,7 @@ type fetchData struct {
 	Results    []json.RawMessage `json:"results"`
 }
 
+// Fetches data from the OpenData API
 func Fetch[T any](url string, f func([]byte) T) []T {
 	offset := 0
 	totalCount := 1
