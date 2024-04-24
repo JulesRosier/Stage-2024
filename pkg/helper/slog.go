@@ -2,14 +2,12 @@ package helper
 
 import (
 	"log/slog"
-	"os"
+	"stage2024/pkg/settings"
 	"strings"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
-func GetLogLevel() slog.Level {
-	switch strings.ToUpper(os.Getenv("LOG_LEVEL")) {
+func GetLogLevel(set settings.Logger) slog.Level {
+	switch strings.ToUpper(set.Level) {
 	case "DEBUG":
 		return slog.LevelDebug
 	case "INFO":

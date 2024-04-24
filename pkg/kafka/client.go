@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"reflect"
 	"stage2024/pkg/helper"
+	"stage2024/pkg/settings"
 	"strings"
 	"time"
 
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
@@ -26,13 +25,14 @@ type KafkaClient struct {
 }
 
 type Config struct {
-	Topics []Topic
+	Topics   []Topic
+	Settings settings.Kafka
 }
 
 func NewClient(config Config) *KafkaClient {
-	rcl := getRepoClient()
+	rcl := getRepoClient(config.Settings)
 	c := KafkaClient{
-		Kcl:    getClient(),
+		Kcl:    getClient(config.Settings),
 		Rcl:    rcl,
 		Serde:  getSerde(rcl, config.Topics),
 		Config: config,
@@ -88,14 +88,14 @@ func (c *KafkaClient) CreateTopics(ctx context.Context) {
 	}
 }
 
-func getClient() *kgo.Client {
-	seed := os.Getenv("SEED_BROKER")
-	user := os.Getenv("EH_AUTH_USER")
-	pw := os.Getenv("EH_AUTH_PASSWORD")
+func getClient(set settings.Kafka) *kgo.Client {
+	seed := set.Brokers
+	user := set.Auth.User
+	pw := set.Auth.Password
 
 	slog.Info("Starting kafka client", "seedbrokers", seed)
 	clientConfigs := []kgo.Opt{
-		kgo.SeedBrokers(seed),
+		kgo.SeedBrokers(seed...),
 		kgo.FetchMaxBytes(5 * 1000 * 1000),
 		kgo.MaxConcurrentFetches(12),
 		kgo.MaxVersions(kversion.V2_6_0()),
@@ -118,14 +118,14 @@ func getClient() *kgo.Client {
 	return cl
 }
 
-func getRepoClient() *sr.Client {
-	registry := os.Getenv("REGISTRY")
-	user := os.Getenv("EH_AUTH_USER")
-	pw := os.Getenv("EH_AUTH_PASSWORD")
+func getRepoClient(set settings.Kafka) *sr.Client {
+	registry := set.SchemaRgistry.Urls
+	user := set.Auth.User
+	pw := set.Auth.Password
 
 	slog.Info("Starting schema registry client", "host", registry)
 	opts := []sr.Opt{
-		sr.URLs(registry),
+		sr.URLs(registry...),
 	}
 	if user != "" && pw != "" {
 		opts = append(opts, sr.BasicAuth(user, pw))

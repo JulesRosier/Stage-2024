@@ -9,6 +9,7 @@ import (
 	"stage2024/pkg/database"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/scheduler"
+	"stage2024/pkg/settings"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -17,14 +18,17 @@ import (
 
 func main() {
 	fmt.Println("Starting...")
-	logLevel := h.GetLogLevel()
+	set, err := settings.Load()
+	h.MaybeDie(err, "Failed to load configs")
+
+	logLevel := h.GetLogLevel(set.Logger)
 	fmt.Printf("LOG_LEVEL = %s\n", logLevel)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
 	slog.SetDefault(logger)
 
-	dbc := database.NewDatabase()
+	dbc := database.NewDatabase(set.Database)
 
 	s := scheduler.NewScheduler()
 	station := &database.Station{

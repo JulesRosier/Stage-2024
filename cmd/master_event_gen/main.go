@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"stage2024/pkg/database"
 	"stage2024/pkg/events"
+	"stage2024/pkg/helper"
 	h "stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
 	"stage2024/pkg/opendata"
@@ -15,6 +16,7 @@ import (
 	"stage2024/pkg/protogen/stations"
 	"stage2024/pkg/protogen/users"
 	"stage2024/pkg/scheduler"
+	"stage2024/pkg/settings"
 	"time"
 )
 
@@ -24,14 +26,17 @@ const maxBikes = 500
 
 func main() {
 	fmt.Println("Starting...")
-	logLevel := h.GetLogLevel()
+	set, err := settings.Load()
+	helper.MaybeDie(err, "Failed to load configs")
+
+	logLevel := h.GetLogLevel(set.Logger)
 	fmt.Printf("LOG_LEVEL = %s\n", logLevel)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
 	}))
 	slog.SetDefault(logger)
 
-	dbc := database.NewDatabase()
+	dbc := database.NewDatabase(set.Database)
 
 	topics := []kafka.Topic{
 		{ProtoFile: users.File_users_user_registered_proto, PType: &users.UserRegistered{}},
@@ -54,7 +59,8 @@ func main() {
 	}
 
 	kc := kafka.NewClient(kafka.Config{
-		Topics: topics,
+		Topics:   topics,
+		Settings: set.Kafka,
 	})
 	kc.CreateTopics(context.Background())
 

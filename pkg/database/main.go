@@ -3,11 +3,10 @@ package database
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"reflect"
 	"stage2024/pkg/helper"
+	"stage2024/pkg/settings"
 
-	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/driver/postgres"
@@ -19,16 +18,15 @@ type DatabaseClient struct {
 	DB *gorm.DB
 }
 
-func NewDatabase() *DatabaseClient {
-
-	DbUser := os.Getenv("DB_USER")
-	DbPassword := os.Getenv("DB_PASSWORD")
-	DbDatabase := os.Getenv("DB_DATABASE_OLTP")
-	DbHost := os.Getenv("DB_HOST")
-	DbPort := os.Getenv("DB_PORT")
+func NewDatabase(set settings.Database) *DatabaseClient {
+	DbUser := set.User
+	DbPassword := set.Paddword
+	DbDatabase := set.Database
+	DbHost := set.Host
+	DbPort := set.Port
 
 	// connect to db and create database if it does not exist
-	createConnStr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres sslmode=disable",
+	createConnStr := fmt.Sprintf("user=%s password=%s host=%s port=%d database=postgres sslmode=disable",
 		DbUser, DbPassword, DbHost, DbPort)
 	dbCreate, err := gorm.Open(postgres.Open(createConnStr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	helper.MaybeDieErr(err)
@@ -42,7 +40,7 @@ func NewDatabase() *DatabaseClient {
 	slog.Debug("Created or reusing database", "name", dbName)
 
 	// connect to database
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%d sslmode=disable",
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 	slog.Debug("Connecting to database", "connstr", connStr)
 
