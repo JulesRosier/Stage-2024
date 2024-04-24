@@ -185,10 +185,13 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 			return err
 		}
 		// after capacity decrease
+		delta := endTime.Sub(pickedUpTime)
+		r := helper.GetRandomNumber()
+		offset := time.Second * time.Duration(r*delta.Seconds())
 		// chance bike defect
 		if rand.Float64() < chanceDefect {
 			bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
-			database.BikeDefectEvent(bike, defectTime, user, defects[rand.IntN(len(defects))], db)
+			database.BikeDefectEvent(bike, pickedUpTime.Add(offset), user, defects[rand.IntN(len(defects))], db)
 		}
 		// same time as capacity increase
 		// bike returned

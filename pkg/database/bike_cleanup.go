@@ -61,7 +61,6 @@ func getEventTimes(bike Bike, amount int32) []time.Time {
 		eventTime := previous.Add(offset)
 		times = append(times, eventTime)
 		previous = eventTime
-		slog.Debug("Event time", "time", eventTime)
 	}
 
 	return times
