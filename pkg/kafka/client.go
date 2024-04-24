@@ -123,7 +123,7 @@ func getRepoClient() *sr.Client {
 	user := os.Getenv("EH_AUTH_USER")
 	pw := os.Getenv("EH_AUTH_PASSWORD")
 
-	slog.Info("starting schema registry client", "host", registry)
+	slog.Info("Starting schema registry client", "host", registry)
 	opts := []sr.Opt{
 		sr.URLs(registry),
 	}

@@ -13,7 +13,6 @@ import (
 
 // Creates 'maxUser' amount of users and 'maxBikes' amount of bikes
 func CreateUsersBikes(db *gorm.DB, maxUsers int64, maxBikes int64) {
-	slog.Debug("Creating users and bikes")
 	err := db.Transaction(func(tx *gorm.DB) error {
 		if err := CreateUsers(db, maxUsers); err != nil {
 			return err

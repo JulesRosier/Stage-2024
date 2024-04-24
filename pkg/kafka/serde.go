@@ -69,7 +69,7 @@ func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
 }
 
 func getReferences(rcl *sr.Client, protoFile protoreflect.FileDescriptor) []sr.SchemaReference {
-	// FIXME: cache referances
+	// FIXME: cache references
 	l := protoFile.Imports().Len()
 	i := 0
 	refs := []sr.SchemaReference{}

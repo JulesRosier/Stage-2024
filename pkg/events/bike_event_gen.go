@@ -24,7 +24,7 @@ const (
 
 // BikeEventGen generates bike events based on historical station occupation changes in the database
 func BikeEventGen(db *gorm.DB) {
-	slog.Info("Generating bike events")
+	slog.Debug("Generating bike events")
 
 	nowUtc := time.Now().UTC().Format(format)
 	decreases := []database.HistoricalStationData{}
@@ -33,6 +33,10 @@ func BikeEventGen(db *gorm.DB) {
 		nowUtc, (minDuration + windowSize).Minutes()).Order("id asc").Find(&decreases).Error
 	if err != nil {
 		slog.Warn("Failed to get decreases", "error", err)
+	}
+
+	if len(decreases) > 0 {
+		slog.Info("Generating bike events for decreases")
 	}
 
 	for _, decrease := range decreases {
@@ -64,7 +68,10 @@ func BikeEventGen(db *gorm.DB) {
 	}
 
 	// generate amount of sequences for amount decreased/increased
-	slog.Info("Generating fake decreases for increase")
+	if len(increases) > 0 {
+		slog.Info("Generating bike events for increases")
+	}
+
 	for _, increase := range increases {
 		// start sequence with increase
 		db.Transaction(func(tx *gorm.DB) error {
