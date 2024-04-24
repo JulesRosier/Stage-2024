@@ -20,7 +20,7 @@ func UpdateBike(db *gorm.DB, record *Bike) error {
 	return nil
 }
 
-// Updates an existing Station record in the database and sends events
+// Updates or creates Station record in the database and sends events
 func UpdateStation(records []*Station, db *gorm.DB) {
 	slog.Debug("Updating stations")
 	for _, record := range records {

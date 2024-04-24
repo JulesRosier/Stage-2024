@@ -37,10 +37,13 @@ func OccupationChange(station Station, change helper.Change, eventTimeStamp time
 		}
 
 		//add historical data and add topic name
-		record := &Station{}
-		db.Limit(1).Find(&record, "id = ?", change.Id)
+		record, err := GetStationById(change.Id, db)
+		if err != nil {
+			return err
+		}
+
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricalData(record, topic, db, 0, protostruct.TimeStamp); err != nil {
+		if err := addHistoricalData(&record, topic, db, 0, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -62,10 +65,13 @@ func OccupationChange(station Station, change helper.Change, eventTimeStamp time
 		}
 
 		//add historical data, get record and add topic name
-		record := &Station{}
-		db.Limit(1).Find(&record, "id = ?", change.Id)
+
+		record, err := GetStationById(change.Id, db)
+		if err != nil {
+			return err
+		}
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricalData(record, topic, db, protostruct.AmountIncreased, protostruct.TimeStamp); err != nil {
+		if err := addHistoricalData(&record, topic, db, protostruct.AmountIncreased, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -87,10 +93,12 @@ func OccupationChange(station Station, change helper.Change, eventTimeStamp time
 		}
 
 		//add historical data, get record and add topic name
-		record := &Station{}
-		db.Limit(1).Find(&record, "id = ?", change.Id)
+		record, err := GetStationById(change.Id, db)
+		if err != nil {
+			return err
+		}
 		topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-		if err := addHistoricalData(record, topic, db, protostruct.AmountDecreased, protostruct.TimeStamp); err != nil {
+		if err := addHistoricalData(&record, topic, db, protostruct.AmountDecreased, protostruct.TimeStamp); err != nil {
 			return err
 		}
 	}
@@ -150,10 +158,8 @@ func createStationEvent(station *Station, db *gorm.DB) error {
 	}
 
 	//add historical data, get record and add topic name
-	record := &Station{}
-	db.Limit(1).Find(&record, "id = ?", station.Id)
 	topic := helper.ToSnakeCase(reflect.TypeOf(protostruct).Elem().Name())
-	if err := addHistoricalData(record, topic, db, 0, protostruct.TimeStamp); err != nil {
+	if err := addHistoricalData(station, topic, db, 0, protostruct.TimeStamp); err != nil {
 		return err
 	}
 
