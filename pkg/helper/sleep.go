@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"log/slog"
 	"math"
 	"math/rand"
 	"time"
@@ -22,15 +21,6 @@ func GenerateNormalDuration(mean, stdDev float64) float64 {
 	duration := mean + z0*stdDev
 
 	return duration
-}
-
-func RandSleep(mean, stdDev int) {
-	t := time.Second*time.Duration(GenerateNormalDuration(float64(mean), float64(stdDev))) + time.Second*30
-	if warpSpeed {
-		t = t / 60
-	}
-	slog.Info("Sleeping", "time", t)
-	time.Sleep(t)
 }
 
 func RandMinutes(mean, stdDev int) time.Duration {

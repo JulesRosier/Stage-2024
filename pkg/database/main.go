@@ -33,17 +33,15 @@ func NewDatabase() *DatabaseClient {
 	createconnstr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres sslmode=disable",
 		DbUser, DbPassword, DbHost, DbPort)
 	dbcreate, err := gorm.Open(postgres.Open(createconnstr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
-	if err != nil {
-		helper.MaybeDieErr(err)
-	}
+	helper.MaybeDieErr(err)
+
 	var datname string
 	dbcreate.Raw("SELECT datname FROM pg_catalog.pg_database WHERE datname=?", DbDatabase).Scan(&datname)
 	slog.Info("d", "datname", datname)
 	if datname != DbDatabase {
-		if err := dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error; err != nil {
-			slog.Warn("Failed to create Database")
-			helper.Die(err)
-		}
+		err := dbcreate.Exec("CREATE DATABASE " + DbDatabase + ";").Error
+		helper.MaybeDie(err, "Failed to create Database")
+
 	}
 
 	// connect to database
@@ -51,9 +49,7 @@ func NewDatabase() *DatabaseClient {
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
-	if err != nil {
-		helper.MaybeDieErr(err)
-	}
+	helper.MaybeDieErr(err)
 
 	slog.Info("Migrating database")
 	err = db.AutoMigrate(&User{}, &Bike{}, &Station{}, &Outbox{}, &HistoricalStationData{})

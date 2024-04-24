@@ -65,7 +65,6 @@ func (c KafkaClient) Produce(item any, timeStamp time.Time) error {
 }
 
 func (c KafkaClient) findTopicByType(inputType any) (string, bool) {
-	// FIXME: could be contant time with hashmap
 	for _, topic := range c.Config.Topics {
 		if reflect.TypeOf(inputType) == reflect.TypeOf(topic.PType) {
 			return topic.getName(""), true

@@ -10,7 +10,7 @@ import (
 
 // Updates an existing Bike record in the database
 func UpdateBike(db *gorm.DB, record *Bike) error {
-	slog.Debug("Updating bike")
+	slog.Debug("Updating bike", "bike", record.Id)
 	err := db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&record).Error
@@ -20,7 +20,7 @@ func UpdateBike(db *gorm.DB, record *Bike) error {
 	return nil
 }
 
-// Updates an existing Station record in the database
+// Updates an existing Station record in the database and sends events
 func UpdateStation(records []*Station, db *gorm.DB) {
 	slog.Debug("Updating stations")
 	for _, record := range records {

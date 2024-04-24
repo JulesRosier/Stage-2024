@@ -15,7 +15,7 @@ import (
 const (
 	minDuration             = time.Minute * 10
 	windowSize              = time.Minute * 30
-	chanceDefect            = 0.03
+	chanceDefect            = 0.02
 	chanceDefectNotReturned = 0.5
 	chanceImmobilized       = 0.5
 	format                  = "2006-01-02 15:04:05.999999-07"
@@ -185,18 +185,11 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 			return err
 		}
 		// after capacity decrease
-		delta := endTime.Sub(decrease.EventTimeStamp)
-		r := rand.Float64()
-		if r == 0 {
-			r = 0.5
-		}
-		offset := time.Second * time.Duration(r*delta.Seconds())
 		// chance bike defect
 		if rand.Float64() < chanceDefect {
 			bike.IsDefect = sql.NullBool{Bool: true, Valid: true}
-			database.BikeDefectEvent(bike, startTime.Add(offset), user, defects[rand.IntN(len(defects))], db)
+			database.BikeDefectEvent(bike, defectTime, user, defects[rand.IntN(len(defects))], db)
 		}
-
 		// same time as capacity increase
 		// bike returned
 		bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
@@ -228,14 +221,10 @@ func getStartOffset(db *gorm.DB, station database.HistoricalStationData) (time.D
 		delta = windowSize
 	}
 
-	r := rand.Float64()
-	if r == 0 {
-		r = 0.5
-	}
+	r := helper.GetRandomNumber()
 
 	offset := time.Second * time.Duration(r*delta.Seconds())
 
-	slog.Debug("Start offset", "offset", offset)
 	return offset, err
 }
 
@@ -280,33 +269,34 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time) (database.Bike, d
 
 // gpt generated defects
 var defects = []string{
-	"Handlebars are actually spaghetti strands",
-	"Wheels keep trying to escape to join the circus",
-	"Saddle is a whoopee cushion",
-	"Pedals rotate backward, propelling you into the past",
-	"Bell plays 'Jingle Bells' at random intervals",
-	"Chain is made of rubber bands",
-	"Brakes function as accelerators",
-	"Bike frame is held together by duct tape",
-	"Lights only work when the moon is full",
-	"Tires are square",
-	"Bike speaks only in Morse code",
-	"Basket is actually a miniature black hole",
-	"Reflectors emit disco lights",
-	"Kickstand has commitment issues",
-	"Water bottle holder dispenses hot sauce instead",
-	"GPS always directs you to the nearest ice cream parlor",
-	"Bike lock is just a piece of string",
-	"Bells and whistles are literal bells and whistles",
-	"Horn plays 'La Cucaracha' off-key",
-	"Handlebars rotate 360 degrees uncontrollably",
-	"Seat cushion is made of cactus needles",
-	"Pedals detach mid-ride for impromptu dance parties",
-	"Frame is magnetically attracted to garbage cans",
-	"Saddle has a 'kick me' sign taped to it",
-	"Bike basket has a pet rock as a passenger",
-	"Bike chain sings 'The Wheels on the Bus' endlessly",
-	"Gears shift randomly to reverse",
-	"Reflectors reflect sarcastic remarks",
-	"Handlebar grips are actually bananas",
+	"Flat tire",
+	"Broken chain",
+	"Worn brake pads",
+	"Loose spokes",
+	"Faulty gear shifting",
+	"Bent wheel rim",
+	"Damaged pedals",
+	"Cracked frame",
+	"Stuck brakes",
+	"Rusted components",
+	"Misaligned wheels",
+	"Broken saddle",
+	"Malfunctioning gears",
+	"Wobbly handlebars",
+	"Loose headset",
+	"Torn seat cover",
+	"Defective bearings",
+	"Faulty brakes",
+	"Cracked fork",
+	"Damaged crankset",
+	"Squeaky seat post",
+	"Slipping seat clamp",
+	"Twisted handlebar grips",
+	"Rattling fender",
+	"Misaligned derailleur",
+	"Sticky shift levers",
+	"Worn-out cassette",
+	"Scratched frame paint",
+	"Broken spoke nipples",
+	"Frayed brake cables",
 }
