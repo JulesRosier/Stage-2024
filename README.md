@@ -18,17 +18,21 @@ docker build . -t  ghcr.io/julesrosier/stage-2024:latest --build-arg GIT_COMMIT=
 docker push ghcr.io/julesrosier/stage-2024:latest
 ```
 
-## .env
-```env
-DB_USER=postgres
-DB_PASSWORD=password
-DB_DATABASE_OLTP=oltp
-DB_HOST=localhost
-DB_PORT=5432
-LOG_LEVEL=info
+## config/config.yaml
 
-SEED_BROKER=localhost:19092
-REGISTRY=localhost:18081
+```yaml
+logger:
+  level: INFO
+database:
+  user: postgres
+  password: password
+  database: gen_oltp
+  host: localhost
+  port: 5432
+kafka:
+  brokers:
+    - localhost:19092
+  schemaRegistry:
+    urls:
+      - localhost:18081
 ```
-
-
