@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	h "stage2024/pkg/helper"
+	"stage2024/pkg/helper"
 
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/proto"
@@ -39,7 +39,7 @@ func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
 	for _, topic := range topics {
 
 		file, err := os.ReadFile(filepath.Join("./proto", topic.ProtoFile.Path()))
-		h.MaybeDieErr(err)
+		helper.MaybeDieErr(err)
 
 		subject := topic.getName("-value")
 
@@ -50,7 +50,7 @@ func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
 			Type:       sr.TypeProtobuf,
 			References: refs,
 		})
-		h.MaybeDie(err, "Failed to create schema")
+		helper.MaybeDie(err, "Failed to create schema")
 		slog.Debug("Created or reusing schema", "subject", subject)
 
 		serde.Register(
@@ -81,7 +81,7 @@ func getReferences(rcl *sr.Client, protoFile protoreflect.FileDescriptor) []sr.S
 			continue
 		}
 		if err != nil {
-			h.MaybeDieErr(err)
+			helper.MaybeDieErr(err)
 		}
 		refs = append(refs, sr)
 	}

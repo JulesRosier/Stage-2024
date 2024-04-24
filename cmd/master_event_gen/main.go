@@ -9,7 +9,6 @@ import (
 	"stage2024/pkg/database"
 	"stage2024/pkg/events"
 	"stage2024/pkg/helper"
-	h "stage2024/pkg/helper"
 	"stage2024/pkg/kafka"
 	"stage2024/pkg/opendata"
 	"stage2024/pkg/protogen/bikes"
@@ -29,7 +28,7 @@ func main() {
 	set, err := settings.Load()
 	helper.MaybeDie(err, "Failed to load configs")
 
-	logLevel := h.GetLogLevel(set.Logger)
+	logLevel := helper.GetLogLevel(set.Logger)
 	fmt.Printf("LOG_LEVEL = %s\n", logLevel)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
