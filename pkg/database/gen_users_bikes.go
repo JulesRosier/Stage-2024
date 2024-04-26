@@ -83,8 +83,6 @@ func CreateBike(db *gorm.DB, createTime time.Time) (*Bike, error) {
 	bike := &Bike{
 		Id:             uuid.New().String(),
 		BikeModel:      bikeBrands[rand.IntN(len(bikeBrands))],
-		Lat:            rand.Float64()*0.1 + 51.0,
-		Lon:            rand.Float64()*0.2 + 3.6,
 		IsElectric:     sql.NullBool{Bool: gofakeit.Bool(), Valid: true},
 		IsImmobilized:  sql.NullBool{Bool: false, Valid: true},
 		IsAbandoned:    sql.NullBool{Bool: false, Valid: true},

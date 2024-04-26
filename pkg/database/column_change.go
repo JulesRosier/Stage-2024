@@ -67,6 +67,8 @@ func changeDetected(change helper.Change, db *gorm.DB) error {
 	case "IsActive":
 		err := activeChange(station, change, db)
 		return err
+	case "MaxCapacity":
+		//slog.Info("MaxCapacity change detected", "station", station.OpenDataId, "old", change.OldValue, "new", change.NewValue)
 	}
 
 	return err

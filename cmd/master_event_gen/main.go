@@ -89,7 +89,8 @@ func main() {
 
 	s.Schedule(time.Second*30, ol.FetchOutboxData)
 
-	//Generate bike events
+	s.Schedule(time.Hour*12, func() { database.BikeCleanUpTransaction(dbc.DB) })
+
 	s.Schedule(time.Minute*fakeBikeFrequency, func() { events.BikeEventGen(dbc.DB) })
 
 	quit := make(chan os.Signal, 1)

@@ -10,7 +10,21 @@ import (
 	"gorm.io/gorm"
 )
 
-// makes unavailable bikes available again
+// Cleans up bikes in a transaction
+func BikeCleanUpTransaction(db *gorm.DB) {
+	slog.Debug("Starting bike cleanup Transaction")
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := BikeCleanUp(tx); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		slog.Warn("error cleaning up bikes", "error", err)
+	}
+}
+
+// Makes unavailable bikes available again
 func BikeCleanUp(db *gorm.DB) error {
 	slog.Info("Cleaning up bikes")
 	bikes := []Bike{}

@@ -28,7 +28,7 @@ func Fetch[T any](url string, f func([]byte) T) []T {
 			allItems = append(allItems, f(x))
 		}
 		if err != nil {
-			slog.Warn("Error fetching data", "error", err)
+			slog.Warn("Error fetching data", "url", url, "error", err)
 			break
 		}
 		totalCount = data.TotalCount
