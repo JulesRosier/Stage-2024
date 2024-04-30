@@ -55,6 +55,9 @@ func BikeCleanUp(db *gorm.DB) error {
 
 		bike.IsReturned = sql.NullBool{Bool: true, Valid: true}
 		bike.InUseTimestamp = sql.NullTime{Time: times[2], Valid: true}
+		bike.Lat = 51.037440
+		bike.Lon = 3.735133
+
 		if err := db.Save(&bike).Error; err != nil {
 			return err
 		}
