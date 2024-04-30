@@ -121,8 +121,8 @@ var bikeBrands = []string{
 func MakeFakeStation(db *gorm.DB, id string) {
 	station := &Station{
 		Id:          id,
-		OpenDataId:  "Bike-factory123",
-		Name:        "Bike factory",
+		OpenDataId:  "BikeFactory-123",
+		Name:        "Bike Factory",
 		Lat:         51.037580,
 		Lon:         3.735660,
 		MaxCapacity: 999999999,
