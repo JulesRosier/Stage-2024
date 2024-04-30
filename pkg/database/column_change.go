@@ -57,6 +57,7 @@ func ColumnChange(oldrecord any, record any, db *gorm.DB, change helper.Change) 
 func changeDetected(change helper.Change, db *gorm.DB) error {
 	station, err := GetStationById(change.Id, db)
 	if err != nil {
+		slog.Warn("Station not found", "station", change.Id, "openDataId", change.OpenDataId, "error", err)
 		return err
 	}
 

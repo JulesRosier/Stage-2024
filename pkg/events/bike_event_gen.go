@@ -139,6 +139,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 	slog.Debug("Generating event sequence")
 	decreaseStation, err := database.GetStationById(decrease.Uuid, db)
 	if err != nil {
+		slog.Warn("Station not found", "station", decrease.Uuid, "openDataId", decrease.OpenDataId, "error", err)
 		return err
 	}
 
@@ -196,6 +197,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 		increase.AmountFaked++
 		increaseStation, err := database.GetStationById(increase.Uuid, db)
 		if err != nil {
+			slog.Warn("Station not found", "station", increase.Uuid, "openDataId", increase.OpenDataId, "error", err)
 			return err
 		}
 		// after capacity decrease

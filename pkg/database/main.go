@@ -44,7 +44,7 @@ func NewDatabase(set settings.Database) *DatabaseClient {
 		DbUser, DbPassword, DbDatabase, DbHost, DbPort)
 	slog.Debug("Connecting to database", "connstr", connStr)
 
-	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	helper.MaybeDieErr(err)
 
 	slog.Debug("Migrating database")
