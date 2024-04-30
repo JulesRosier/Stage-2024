@@ -22,7 +22,7 @@ func StorageGhent(db *gorm.DB) {
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Station {
 
-			in := struct {
+			inStruct := struct {
 				Time           string `json:"time"`
 				Facilityname   string `json:"facilityname"`
 				Id             string `json:"id"`
@@ -35,6 +35,7 @@ func StorageGhent(db *gorm.DB) {
 					Lat float64 `json:"lat"`
 				}
 			}{}
+			in := inStruct
 
 			err := json.Unmarshal(b, &in)
 			if err != nil {
@@ -55,7 +56,7 @@ func StorageGhent(db *gorm.DB) {
 				out.Lat = 51.053970
 				out.Lon = 3.721184
 			}
-
+			in = inStruct
 			return out
 		},
 	)

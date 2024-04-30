@@ -19,7 +19,7 @@ func Donkey(db *gorm.DB) {
 
 	slog.Info("Fetching data", "model", model)
 
-	in := struct {
+	inStruct := struct {
 		Station_id          string `json:"station_id"`
 		Num_bikes_available int32  `json:"num_bikes_available"`
 		Num_docks_available int32  `json:"num_docks_available"`
@@ -34,6 +34,7 @@ func Donkey(db *gorm.DB) {
 		Name string `json:"name"`
 		Type string `json:"type"`
 	}{}
+	in := inStruct
 
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Station {
@@ -44,7 +45,6 @@ func Donkey(db *gorm.DB) {
 			}
 
 			out := &database.Station{}
-
 			out.Id = uuid.New().String()
 			out.OpenDataId = fmt.Sprint(model+"-", in.Station_id)
 			out.Lat = in.Geopunt.Lat
@@ -53,6 +53,7 @@ func Donkey(db *gorm.DB) {
 			out.MaxCapacity = in.Num_bikes_available + in.Num_docks_available
 			out.Occupation = in.Num_bikes_available
 			out.IsActive = sql.NullBool{Bool: in.Is_renting != 0, Valid: true}
+			in = inStruct
 
 			return out
 		},

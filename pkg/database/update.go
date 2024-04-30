@@ -23,10 +23,13 @@ func UpdateBike(db *gorm.DB, record *Bike) error {
 // Updates or creates Station record in the database and sends events
 func UpdateStation(records []*Station, db *gorm.DB) {
 	slog.Debug("Updating stations")
+	// if record.Name is empty, skip
 	for _, record := range records {
+		if record.Name == "" || record.OpenDataId == "Donkey-26673" {
+			continue
+		}
 		oldRecord := &Station{}
 		result := db.Limit(1).Find(&oldRecord, "open_data_id = ?", record.OpenDataId)
-
 		//start transaction
 		err := db.Transaction(func(tx *gorm.DB) error {
 			if result.RowsAffected == 0 {

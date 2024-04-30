@@ -19,7 +19,7 @@ func StorageTownHall(db *gorm.DB) {
 
 	slog.Info("Fetching data", "model", model)
 
-	in := struct {
+	inStruct := struct {
 		Name            string  `json:"name"`
 		Parkingcapacity float32 `json:"parkingCapacity"`
 		Vacantspaces    float32 `json:"vacantSpaces"`
@@ -34,6 +34,7 @@ func StorageTownHall(db *gorm.DB) {
 			Lat float64 `json:"lat"`
 		} `json:"locatie"`
 	}{}
+	in := inStruct
 
 	records := gentopendata.Fetch(url,
 		func(b []byte) *database.Station {
@@ -52,7 +53,7 @@ func StorageTownHall(db *gorm.DB) {
 			out.MaxCapacity = int32(in.Parkingcapacity)
 			out.Occupation = int32(in.Parkingcapacity - in.Vacantspaces)
 			out.IsActive = sql.NullBool{Bool: true, Valid: true}
-
+			in = inStruct
 			return out
 		},
 	)

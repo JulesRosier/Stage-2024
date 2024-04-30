@@ -23,7 +23,7 @@ func BlueBike(db *gorm.DB) {
 
 	slog.Info("Fetching data", "model", model)
 
-	in := struct {
+	inStruct := struct {
 		LastSeen       time.Time `json:"last_seen"`
 		Id             int       `json:"id"`
 		Name           string    `json:"name"`
@@ -37,6 +37,7 @@ func BlueBike(db *gorm.DB) {
 		} `json:"geopoint"`
 		Type string `json:"type"`
 	}{}
+	in := inStruct
 
 	for _, url := range urls {
 
@@ -49,7 +50,6 @@ func BlueBike(db *gorm.DB) {
 				}
 
 				out := &database.Station{}
-
 				out.Id = uuid.New().String()
 				out.OpenDataId = fmt.Sprint(model+"-", in.Id)
 				out.Lat = in.Geopoint.Lat
@@ -58,7 +58,7 @@ func BlueBike(db *gorm.DB) {
 				out.MaxCapacity = in.BikesAvailable + in.BikesInUse
 				out.Occupation = in.BikesAvailable
 				out.IsActive = sql.NullBool{Bool: true, Valid: true}
-
+				in = inStruct
 				return out
 			},
 		)
