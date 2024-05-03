@@ -24,7 +24,7 @@ const (
 
 // BikeEventGen generates bike events based on historical station occupation changes in the database
 func BikeEventGen(db *gorm.DB) {
-	slog.Debug("Generating bike events")
+	slog.Info("Generating bike events")
 
 	nowUtc := time.Now().UTC().Format(format)
 	decreases := []database.HistoricalStationData{}
@@ -290,7 +290,7 @@ func getAvailableBikeAndUser(db *gorm.DB, startTime time.Time, lat float64, lon 
 		user = *newUser
 	}
 
-	slog.Info("Bike & User selected", "bike", bike.Id, "user", user.Id)
+	slog.Debug("Bike & User selected", "bike", bike.Id, "user", user.Id)
 	return bike, user, nil
 }
 

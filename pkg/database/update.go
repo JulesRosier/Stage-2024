@@ -25,8 +25,11 @@ func UpdateStation(records []*Station, db *gorm.DB) {
 	slog.Debug("Updating stations")
 	// if record.Name is empty, skip
 	for _, record := range records {
-		if record.Name == "" || record.OpenDataId == "Donkey-26673" {
+		if record.Name == "" {
 			continue
+		}
+		if record.OpenDataId == "Donkey-26673" {
+			record.Name = record.Name + "-2"
 		}
 		oldRecord := &Station{}
 		result := db.Limit(1).Find(&oldRecord, "open_data_id = ?", record.OpenDataId)

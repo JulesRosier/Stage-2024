@@ -30,7 +30,7 @@ func BikeCleanUp(db *gorm.DB) error {
 	bikes := []Bike{}
 	db.Where("(is_defect = true OR is_immobilized = true OR is_abandoned = true OR is_in_storage = true OR is_returned = false) AND in_use_timestamp IS NOT NULL AND extract(epoch from ? - in_use_timestamp)/60 > 10", time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")).Find(&bikes)
 	for _, bike := range bikes {
-		slog.Info("Cleaning up bike", "bike", bike.Id)
+		slog.Debug("Cleaning up bike", "bike", bike.Id)
 		times := getEventTimes(bike, 3)
 
 		bike.IsAbandoned = sql.NullBool{Bool: false, Valid: true}
