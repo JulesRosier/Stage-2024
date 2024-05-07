@@ -173,7 +173,7 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 	// bike not returned
 	if increase == (database.HistoricalStationData{}) {
-		slog.Info("Bike not returned", "station", decreaseStation.Name)
+		slog.Info("Bike not returned", "decrease", decreaseStation.Name, "id", decrease.Uuid)
 		endTime = fakeEndTime
 		// chance bike defect
 		if rand.Float64() < chanceDefectNotReturned {
@@ -193,9 +193,9 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 
 		db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
 	} else { // bike returned
-		slog.Info("Bike returned", "station", decreaseStation.Name)
 		increase.AmountFaked++
 		increaseStation, err := database.GetStationById(increase.Uuid, db)
+		slog.Info("Bike returned", "decrease", decreaseStation.Name, "increase", increaseStation.Name, "id", decrease.Uuid)
 		if err != nil {
 			slog.Warn("Station not found", "station", increase.Uuid, "openDataId", increase.OpenDataId, "error", err)
 			return err
