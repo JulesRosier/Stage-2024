@@ -15,13 +15,13 @@ import (
 
 const protoDir = "./proto"
 
-type Topic struct {
+type ProtoDefinition struct {
 	Name      string
 	ProtoFile protoreflect.FileDescriptor
 	PType     protoreflect.ProtoMessage
 }
 
-func (t Topic) getName(suffix string) string {
+func (t ProtoDefinition) getName(suffix string) string {
 	if t.Name == "" {
 		base := filepath.Base(t.ProtoFile.Path())
 		fileName := base[:len(base)-len(filepath.Ext(base))]
@@ -31,7 +31,7 @@ func (t Topic) getName(suffix string) string {
 	}
 }
 
-func getSerde(rcl *sr.Client, topics []Topic) *sr.Serde {
+func getSerde(rcl *sr.Client, topics []ProtoDefinition) *sr.Serde {
 
 	serde := &sr.Serde{}
 	serde.SetDefaults()

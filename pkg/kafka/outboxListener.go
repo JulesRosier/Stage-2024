@@ -16,7 +16,7 @@ type OutboxListener struct {
 	queue    chan database.Outbox
 }
 
-func NewOutboxListener(kc *KafkaClient, db *database.DatabaseClient, topics []Topic) *OutboxListener {
+func NewOutboxListener(kc *KafkaClient, db *database.DatabaseClient, topics []ProtoDefinition) *OutboxListener {
 	tm := map[string]protoreflect.ProtoMessage{}
 	for _, topic := range topics {
 		tm[topic.getName("")] = topic.PType

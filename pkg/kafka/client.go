@@ -25,8 +25,8 @@ type KafkaClient struct {
 }
 
 type Config struct {
-	Topics   []Topic
-	Settings settings.Kafka
+	ProtoDefinition []ProtoDefinition
+	Settings        settings.Kafka
 }
 
 func NewClient(config Config) *KafkaClient {
@@ -34,28 +34,34 @@ func NewClient(config Config) *KafkaClient {
 	c := KafkaClient{
 		Kcl:    getClient(config.Settings),
 		Rcl:    rcl,
-		Serde:  getSerde(rcl, config.Topics),
+		Serde:  getSerde(rcl, config.ProtoDefinition),
 		Config: config,
 	}
 	return &c
 }
 
 func (c KafkaClient) Produce(item any, timeStamp time.Time) error {
-	topic, ok := c.findTopicByType(item)
+	eventType, ok := c.findEventByType(item)
 	if !ok {
 		return fmt.Errorf("no topic found for type %s", reflect.TypeOf(item))
 	}
 	itemBytes, err := c.Serde.Encode(item)
+	var topic string
+	if c.Config.Settings.TopicGrouping {
+		topic = strings.SplitN(eventType, "_", 2)[0]
+	} else {
+		topic = eventType
+	}
 	if err != nil {
 		return err
 	}
 	record := &kgo.Record{
 		Topic:     topic,
 		Value:     itemBytes,
-		Key:       []byte(strings.SplitN(topic, "_", 2)[0]),
+		Key:       []byte(strings.SplitN(eventType, "_", 2)[0]),
 		Timestamp: timeStamp,
 		Headers: []kgo.RecordHeader{
-			{Key: "EVENT_TYPE", Value: []byte(topic)},
+			{Key: "EVENT_TYPE", Value: []byte(eventType)},
 		},
 	}
 	rs := c.Kcl.ProduceSync(context.Background(), record)
@@ -67,8 +73,8 @@ func (c KafkaClient) Produce(item any, timeStamp time.Time) error {
 	return nil
 }
 
-func (c KafkaClient) findTopicByType(inputType any) (string, bool) {
-	for _, topic := range c.Config.Topics {
+func (c KafkaClient) findEventByType(inputType any) (string, bool) {
+	for _, topic := range c.Config.ProtoDefinition {
 		if reflect.TypeOf(inputType) == reflect.TypeOf(topic.PType) {
 			return topic.getName(""), true
 		}
@@ -80,9 +86,24 @@ func (c *KafkaClient) CreateTopics(ctx context.Context) {
 	acl := kadm.NewClient(c.Kcl)
 	topicDetails, err := acl.ListTopics(ctx)
 	helper.MaybeDieErr(err)
+	var topics []string
+	if c.Config.Settings.TopicGrouping {
+		for _, topic := range c.Config.ProtoDefinition {
+			substr := strings.SplitN(topic.getName(""), "_", 2)[0]
+			for _, t := range topics {
+				if t == substr {
+					continue
+				}
+				topics = append(topics, substr)
+			}
+		}
+	} else {
+		for _, topic := range c.Config.ProtoDefinition {
+			topics = append(topics, topic.getName(""))
+		}
+	}
 
-	for _, topic := range c.Config.Topics {
-		t := topic.getName("")
+	for _, t := range topics {
 		if !topicDetails.Has(t) {
 			a, err := acl.CreateTopic(ctx, -1, -1, nil, t)
 			helper.MaybeDie(err, "Failed to create topic")

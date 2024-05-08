@@ -48,7 +48,7 @@ func main() {
 
 	dbc := database.NewDatabase(set.Database)
 
-	topics := []kafka.Topic{
+	topics := []kafka.ProtoDefinition{
 		{ProtoFile: users.File_users_user_registered_proto, PType: &users.UserRegistered{}},
 
 		{ProtoFile: bikes.File_bikes_bike_abandoned_proto, PType: &bikes.BikeAbandoned{}},
@@ -69,8 +69,8 @@ func main() {
 	}
 
 	kc := kafka.NewClient(kafka.Config{
-		Topics:   topics,
-		Settings: set.Kafka,
+		ProtoDefinition: topics,
+		Settings:        set.Kafka,
 	})
 	kc.CreateTopics(context.Background())
 

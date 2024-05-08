@@ -9,7 +9,9 @@ type Kafka struct {
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 	} `yaml:"auth"`
+	TopicGrouping bool `yaml:"topicGrouping"`
 }
 
 func (k *Kafka) SetDefault() {
+	k.TopicGrouping = false
 }
