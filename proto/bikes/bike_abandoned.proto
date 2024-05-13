@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option java_package = "proto";
+
 import "bikes/bike_identification.proto";
 import "users/user_identification.proto";
 import "common/location.proto";
