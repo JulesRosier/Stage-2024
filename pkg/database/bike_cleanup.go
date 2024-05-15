@@ -26,9 +26,13 @@ func BikeCleanUpTransaction(db *gorm.DB) {
 
 // Makes unavailable bikes available again
 func BikeCleanUp(db *gorm.DB) error {
-	slog.Info("Cleaning up bikes")
 	bikes := []Bike{}
 	db.Where("(is_defect = true OR is_immobilized = true OR is_abandoned = true OR is_in_storage = true OR is_returned = false) AND in_use_timestamp IS NOT NULL AND extract(epoch from ? - in_use_timestamp)/60 > 10", time.Now().UTC().Format("2006-01-02 15:04:05.999999-07")).Find(&bikes)
+
+	if len(bikes) > 0 {
+		slog.Info("Cleaning up bikes")
+	}
+
 	for _, bike := range bikes {
 		slog.Debug("Cleaning up bike", "bike", bike.Id)
 		times := getEventTimes(bike, 3)
