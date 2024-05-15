@@ -26,3 +26,5 @@ Ignore/
 tmp
 
 /config
+target
+.idea
