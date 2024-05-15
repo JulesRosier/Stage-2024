@@ -62,6 +62,7 @@ func (c KafkaClient) Produce(item any, timeStamp time.Time) error {
 		Timestamp: timeStamp,
 		Headers: []kgo.RecordHeader{
 			{Key: "EVENT_TYPE", Value: []byte(eventType)},
+			{Key: "TIMESTAMP", Value: []byte(timeStamp.Format(time.RFC3339))},
 		},
 	}
 	rs := c.Kcl.ProduceSync(context.Background(), record)
