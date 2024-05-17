@@ -35,4 +35,5 @@ kafka:
   schemaRegistry:
     urls:
       - localhost:18081
+  topicGrouping: true
 ```
