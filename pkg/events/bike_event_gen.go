@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"math"
 	"math/rand/v2"
 	"stage2024/pkg/database"
 	"stage2024/pkg/helper"
@@ -187,8 +188,9 @@ func generate(db *gorm.DB, increase database.HistoricalStationData, decrease dat
 		}
 		// bike abandoned
 		bike.IsAbandoned = sql.NullBool{Bool: true, Valid: true}
-		bike.Lat = rand.Float64()*0.1 + 51.0
-		bike.Lon = rand.Float64()*0.2 + 3.6
+		ratio := math.Pow(10, float64(6))
+		bike.Lat = math.Round(ratio*(rand.Float64()*0.1+51.0)) / ratio
+		bike.Lon = math.Round(ratio*(rand.Float64()*0.2+3.6)) / ratio
 		database.BikeAbandonedEvent(bike, abandonedTime, user, db)
 
 		db.Model(&decrease).Update("amount_faked", decrease.AmountFaked)
